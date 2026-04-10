@@ -1,0 +1,518 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Artists</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Roboto+Flex:opsz,wdth,wght@8..144,25..151,100..900&display=swap" rel="stylesheet">
+  <style>
+
+    *, *::before, *::after {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    html, body {
+      width: 100%;
+      height: 100%;
+      background: #fff;
+      overflow: hidden;
+      font-family: 'Roboto Flex', 'Arial Black', Helvetica, sans-serif;
+    }
+
+    /* ── Snap scroll container ── */
+    .scroll-container {
+      width: 100%;
+      height: 100vh;
+      overflow-y: scroll;
+      scroll-snap-type: y mandatory;
+      scrollbar-width: none;
+    }
+    .scroll-container::-webkit-scrollbar { display: none; }
+
+    /* ── Individual artist slides ── */
+    .slide {
+      height: clamp(70px, 10vw, 140px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      scroll-snap-align: center;
+    }
+
+    /* Padding slides so first/last name can reach center */
+    .slide-spacer {
+      height: 50vh;
+      scroll-snap-align: none;
+    }
+
+    .artist-name {
+      font-family: 'Roboto Flex', 'Arial Black', Helvetica, sans-serif;
+      font-weight: 900;
+      font-size: clamp(72px, 14vw, 220px);
+      color: #000;
+      white-space: nowrap;
+      line-height: 1;
+      /* Vertical compression */
+      transform: scaleY(0.58);
+      transform-origin: center center;
+      display: block;
+      /* Soft contour / outline */
+      text-shadow:
+        0   0   6px rgba(0,0,0,0.55),
+        1px 2px 6px rgba(0,0,0,0.30),
+       -1px 2px 6px rgba(0,0,0,0.30);
+      -webkit-text-stroke: 0.5px rgba(0,0,0,0.4);
+    }
+
+    /* ── Top nav ── */
+    .nav {
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%;
+      z-index: 300;
+      transition: transform 0.3s ease;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 14px 0 12px;
+      gap: clamp(16px, 3vw, 48px);
+    }
+    .nav a {
+      font-family: 'Roboto Flex', 'Arial Black', Helvetica, sans-serif;
+      font-weight: 900;
+      font-size: clamp(14px, 1.8vw, 26px);
+      text-decoration: none;
+      letter-spacing: 0.08em;
+      mix-blend-mode: difference;
+      color: #c8c8c8;
+      text-shadow: 0 0 8px rgba(255,255,255,0.9), 0 0 18px rgba(255,255,255,0.5);
+    }
+    .nav a:hover { opacity: 0.6; }
+
+    .nav::before {
+      content: '';
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      height: 110px;
+      z-index: -1;
+      backdrop-filter: blur(24px);
+      -webkit-backdrop-filter: blur(24px);
+      background: linear-gradient(to bottom, rgba(0,0,0,0.45) 0%, rgba(0,0,0,0.1) 70%, transparent 100%);
+      pointer-events: none;
+    }
+
+    /* Hide menu trigger and menu on desktop */
+    #mobileTrigger { display: none; }
+    #mobile-menu { display: none; }
+
+    @media (max-width: 768px) {
+      .nav a { display: none; }
+      #mobile-menu { display: flex; }
+      #mobileTrigger {
+        display: block;
+        font-size: clamp(18px, 6vw, 28px);
+        mix-blend-mode: difference;
+        color: #c8c8c8;
+        text-shadow: 0 0 8px rgba(255,255,255,0.9), 0 0 18px rgba(255,255,255,0.5);
+      }
+      .nav { justify-content: center; }
+    }
+
+    /* Slide-down mobile menu */
+    #mobile-menu {
+      position: fixed;
+      top: 0; left: 0; width: 100%; height: calc(65vh + 48px);
+      z-index: 200;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-start;
+      padding-top: 90px;
+      gap: clamp(4px, 1.2vh, 12px);
+      background: rgba(0, 0, 0, 0.3);
+      backdrop-filter: blur(28px);
+      -webkit-backdrop-filter: blur(28px);
+      -webkit-mask-image: linear-gradient(to bottom, black 75%, transparent 100%);
+      mask-image: linear-gradient(to bottom, black 75%, transparent 100%);
+      transform: translateY(calc(-100% - 40px));
+      transition: transform 0.4s cubic-bezier(0.25, 0, 0, 1);
+      pointer-events: none;
+    }
+    #mobile-menu.open {
+      transform: translateY(0);
+      pointer-events: auto;
+    }
+    #mobile-menu a {
+      font-family: 'Roboto Flex', 'Arial Black', Helvetica, sans-serif;
+      font-weight: 900;
+      font-size: clamp(24px, 7vw, 48px);
+      text-decoration: none;
+      letter-spacing: 0.06em;
+      color: #c8c8c8;
+      mix-blend-mode: difference;
+      transform: scaleY(0.62);
+      transform-origin: center center;
+      display: block;
+      transition: opacity 0.2s;
+    }
+    #mobile-menu a:hover,
+    #mobile-menu a:active { opacity: 0.5; }
+    #mobile-menu-close {
+      position: absolute;
+      top: 10px; right: 14px;
+      background: none; border: none;
+      cursor: pointer; color: #fff;
+      font-size: 20px; font-weight: 900;
+      opacity: 0.6; padding: 4px 8px;
+    }
+    #mobile-menu-close:hover { opacity: 1; }
+
+    /* ── Icon buttons ── */
+    .icon-btn {
+      position: fixed;
+      top: 14px;
+      z-index: 310;
+      background: none;
+      border: none;
+      cursor: pointer;
+      padding: 4px;
+      line-height: 0;
+      color: #fff;
+      mix-blend-mode: difference;
+      -webkit-tap-highlight-color: transparent;
+    }
+    #readableToggle { right: 16px; }
+    #soundToggle    { left: 16px; }
+    .icon-btn .cross-line {
+      stroke-dasharray: 32;
+      stroke-dashoffset: 32;
+      transition: stroke-dashoffset 0.28s ease;
+    }
+    .icon-btn.off .cross-line { stroke-dashoffset: 0; }
+
+    /* ── Simple mode ── */
+    body.simple .brush { display: none; }
+    body.simple .nav a { mix-blend-mode: normal; color: #000; text-shadow: none; }
+    body.simple .icon-btn { mix-blend-mode: normal; color: #000; }
+    body.simple .nav::before { background: rgba(255,255,255,0.85); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); }
+
+    /* ── Fixed grey oval overlay ── */
+    .brush {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      pointer-events: none;
+      z-index: 10;
+      mix-blend-mode: difference;
+      background: linear-gradient(to bottom, #fff 0%, #313131 25%, #fffee9 50%, #313131 75%, #fff 100%);
+    }
+
+    /* Ensure scroll container and slides sit above bg */
+    .scroll-container { position: relative; z-index: 1; }
+  </style>
+</head>
+<body>
+
+  <nav class="nav">
+    <a href="index.html">Backslash</a>
+    <a href="index_n_color_3.html">Artists</a>
+    <a href="index_n_timetable_1.html">Timetable</a>
+    <a href="#">Day</a>
+    <a href="index_n_gallery.html">Gallery</a>
+    <a href="info.html">Info</a>
+    <a href="#" id="mobileTrigger">Menu</a>
+  </nav>
+
+  <button class="icon-btn" id="readableToggle" aria-label="Toggle readable mode">
+    <svg width="26" height="26" viewBox="0 0 26 26" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+      <ellipse cx="13" cy="13" rx="9" ry="5.5"/>
+      <circle cx="13" cy="13" r="2.5" fill="currentColor" stroke="none"/>
+      <line class="cross-line" x1="3" y1="3" x2="23" y2="23"/>
+    </svg>
+  </button>
+
+  <button class="icon-btn" id="soundToggle" aria-label="Toggle voice">
+    <svg width="26" height="26" viewBox="0 0 26 26" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+      <polygon points="5,9 5,17 9,17 15,21 15,5 9,9" fill="currentColor" stroke="none"/>
+      <path d="M18,10 Q22,13 18,16"/>
+      <line class="cross-line" x1="3" y1="3" x2="23" y2="23"/>
+    </svg>
+  </button>
+
+  <div id="mobile-menu">
+    <button id="mobile-menu-close" style="display:none"></button>
+    <a href="index.html">Backslash</a>
+    <a href="index_n_color_3.html">Artists</a>
+    <a href="index_n_timetable_1.html">Timetable</a>
+    <a href="#">Day</a>
+    <a href="index_n_gallery.html">Gallery</a>
+    <a href="info.html">Info</a>
+  </div>
+
+  <div class="scroll-container">
+    <div class="slide-spacer"></div>
+    <div class="slide" data-img="1"><span class="artist-name">Anu Cato</span></div>
+    <div class="slide" data-img="2"><span class="artist-name">djadjamai</span></div>
+    <div class="slide" data-img="3"><span class="artist-name">FUMU</span></div>
+    <div class="slide" data-img="4"><span class="artist-name">Isi!</span></div>
+    <div class="slide" data-img="5"><span class="artist-name">GAto</span></div>
+    <div class="slide" data-img="6"><span class="artist-name">NaKo</span></div>
+    <div class="slide" data-img="7"><span class="artist-name">YSEI</span></div>
+    <div class="slide" data-img="8"><span class="artist-name">Lumi.B</span></div>
+    <div class="slide" data-img="9"><span class="artist-name">dAko</span></div>
+    <div class="slide" data-img="10"><span class="artist-name">PRXMX</span></div>
+    <div class="slide" data-img="11"><span class="artist-name">Safi!</span></div>
+    <div class="slide" data-img="12"><span class="artist-name">CXLOE</span></div>
+    <div class="slide" data-img="13"><span class="artist-name">Nneka</span></div>
+    <div class="slide" data-img="14"><span class="artist-name">fLo</span></div>
+    <div class="slide" data-img="15"><span class="artist-name">XANA</span></div>
+    <div class="slide" data-img="16"><span class="artist-name">Pelo</span></div>
+    <div class="slide" data-img="1"><span class="artist-name">DMBA</span></div>
+    <div class="slide" data-img="2"><span class="artist-name">Yosa!</span></div>
+    <div class="slide" data-img="3"><span class="artist-name">KXNG</span></div>
+    <div class="slide" data-img="4"><span class="artist-name">Boé</span></div>
+    <div class="slide" data-img="5"><span class="artist-name">Temi!</span></div>
+    <div class="slide" data-img="6"><span class="artist-name">AxMo</span></div>
+    <div class="slide" data-img="7"><span class="artist-name">VVNDR</span></div>
+    <div class="slide" data-img="8"><span class="artist-name">Jace.B</span></div>
+    <div class="slide" data-img="9"><span class="artist-name">KYMA</span></div>
+    <div class="slide" data-img="10"><span class="artist-name">Prxz</span></div>
+    <div class="slide" data-img="11"><span class="artist-name">OwuSu</span></div>
+    <div class="slide" data-img="12"><span class="artist-name">SLWMO</span></div>
+    <div class="slide" data-img="13"><span class="artist-name">Rexx!</span></div>
+    <div class="slide" data-img="14"><span class="artist-name">BuJu</span></div>
+    <div class="slide-spacer"></div>
+  </div>
+
+  <!-- Fixed grey brush stroke – mix-blend-mode: difference -->
+  <div class="brush"></div>
+
+  <script>
+    const container = document.querySelector('.scroll-container');
+    const slides    = Array.from(document.querySelectorAll('.slide'));
+
+    let currentImg  = null;
+
+    // ── Audio synthesis ──────────────────────────────────────────────
+    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
+    function noise(duration, filter = null, filterFreq = 2000, gain = 0.6) {
+      const buf  = audioCtx.createBuffer(1, audioCtx.sampleRate * duration, audioCtx.sampleRate);
+      const data = buf.getChannelData(0);
+      for (let i = 0; i < data.length; i++) data[i] = Math.random() * 2 - 1;
+      const src = audioCtx.createBufferSource();
+      src.buffer = buf;
+      const g = audioCtx.createGain();
+      if (filter) {
+        const f = audioCtx.createBiquadFilter();
+        f.type = filter; f.frequency.value = filterFreq;
+        src.connect(f); f.connect(g);
+      } else {
+        src.connect(g);
+      }
+      g.connect(audioCtx.destination);
+      return { src, gain: g };
+    }
+
+    function osc(freq, type = 'sine') {
+      const o = audioCtx.createOscillator();
+      const g = audioCtx.createGain();
+      o.type = type; o.frequency.value = freq;
+      o.connect(g); g.connect(audioCtx.destination);
+      return { osc: o, gain: g };
+    }
+
+    function env(gainNode, peak, decay, t) {
+      gainNode.gain.setValueAtTime(peak, t);
+      gainNode.gain.exponentialRampToValueAtTime(0.0001, t + decay);
+    }
+
+    const sounds = {
+      1:  (t) => { // Snare A
+            const { src, gain: g } = noise(0.2, 'bandpass', 800, 0.7);
+            env(g, 0.7, 0.18, t); g.gain.setValueAtTime(0.7, t); src.start(t); src.stop(t + 0.2);
+            const { osc: o, gain: og } = osc(200); env(og, 0.4, 0.08, t); o.start(t); o.stop(t + 0.1);
+          },
+      2:  (t) => { // Kick
+            const { osc: o, gain: g } = osc(60);
+            o.frequency.setValueAtTime(160, t); o.frequency.exponentialRampToValueAtTime(40, t + 0.1);
+            env(g, 0.9, 0.3, t); o.start(t); o.stop(t + 0.35);
+          },
+      3:  (t) => { // Closed hi-hat
+            const { src, gain: g } = noise(0.08, 'highpass', 8000, 0.4);
+            env(g, 0.4, 0.05, t); g.gain.setValueAtTime(0.4, t); src.start(t); src.stop(t + 0.08);
+          },
+      4:  (t) => { // Clap
+            [0, 0.01, 0.02].forEach(offset => {
+              const { src, gain: g } = noise(0.07, 'bandpass', 1200, 0.5);
+              g.gain.setValueAtTime(0.5, t + offset);
+              g.gain.exponentialRampToValueAtTime(0.0001, t + offset + 0.06);
+              src.start(t + offset); src.stop(t + offset + 0.07);
+            });
+          },
+      5:  (t) => { // Tom high
+            const { osc: o, gain: g } = osc(320);
+            o.frequency.setValueAtTime(320, t); o.frequency.exponentialRampToValueAtTime(180, t + 0.15);
+            env(g, 0.7, 0.2, t); o.start(t); o.stop(t + 0.25);
+          },
+      6:  (t) => { // Tom low
+            const { osc: o, gain: g } = osc(100);
+            o.frequency.setValueAtTime(100, t); o.frequency.exponentialRampToValueAtTime(55, t + 0.2);
+            env(g, 0.8, 0.3, t); o.start(t); o.stop(t + 0.35);
+          },
+      7:  (t) => { // Open hi-hat
+            const { src, gain: g } = noise(0.4, 'highpass', 7000, 0.35);
+            env(g, 0.35, 0.35, t); g.gain.setValueAtTime(0.35, t); src.start(t); src.stop(t + 0.4);
+          },
+      8:  (t) => { // Rim shot
+            const { osc: o, gain: g } = osc(900, 'triangle');
+            env(g, 0.6, 0.04, t); o.start(t); o.stop(t + 0.05);
+            const { src, gain: ng } = noise(0.04, 'bandpass', 1800, 0.3);
+            env(ng, 0.3, 0.03, t); ng.gain.setValueAtTime(0.3, t); src.start(t); src.stop(t + 0.04);
+          },
+      9:  (t) => { // 808 kick
+            const { osc: o, gain: g } = osc(55);
+            o.frequency.setValueAtTime(200, t); o.frequency.exponentialRampToValueAtTime(40, t + 0.15);
+            env(g, 1.0, 0.6, t); o.start(t); o.stop(t + 0.7);
+          },
+      10: (t) => { // Cowbell
+            [562, 845].forEach(freq => {
+              const { osc: o, gain: g } = osc(freq, 'square');
+              env(g, 0.25, 0.5, t); o.start(t); o.stop(t + 0.6);
+            });
+          },
+      11: (t) => { // Crash
+            const { src, gain: g } = noise(1.0, 'highpass', 5000, 0.3);
+            g.gain.setValueAtTime(0.3, t); g.gain.exponentialRampToValueAtTime(0.0001, t + 1.0);
+            src.start(t); src.stop(t + 1.0);
+          },
+      12: (t) => { // Clave
+            const { osc: o, gain: g } = osc(1400, 'sine');
+            env(g, 0.7, 0.025, t); o.start(t); o.stop(t + 0.03);
+          },
+      13: (t) => { // Snare B (deeper)
+            const { src, gain: g } = noise(0.25, 'bandpass', 500, 0.6);
+            env(g, 0.6, 0.22, t); g.gain.setValueAtTime(0.6, t); src.start(t); src.stop(t + 0.25);
+            const { osc: o, gain: og } = osc(120); env(og, 0.5, 0.1, t); o.start(t); o.stop(t + 0.12);
+          },
+      14: (t) => { // Shaker
+            const { src, gain: g } = noise(0.06, 'bandpass', 5000, 0.25);
+            env(g, 0.25, 0.05, t); g.gain.setValueAtTime(0.25, t); src.start(t); src.stop(t + 0.06);
+          },
+      15: (t) => { // Synth perc
+            const { osc: o, gain: g } = osc(440, 'triangle');
+            o.frequency.setValueAtTime(660, t); o.frequency.exponentialRampToValueAtTime(220, t + 0.12);
+            env(g, 0.6, 0.15, t); o.start(t); o.stop(t + 0.2);
+          },
+      16: (t) => { // Deep sub kick
+            const { osc: o, gain: g } = osc(40);
+            o.frequency.setValueAtTime(120, t); o.frequency.exponentialRampToValueAtTime(30, t + 0.2);
+            env(g, 1.0, 0.5, t); o.start(t); o.stop(t + 0.55);
+          },
+    };
+
+    function playSample(imgNum) {
+      if (audioCtx.state === 'suspended') audioCtx.resume();
+      const fn = sounds[parseInt(imgNum)];
+      if (fn) fn(audioCtx.currentTime);
+    }
+
+    // ── End audio ────────────────────────────────────────────────────
+
+    function setBackground(imgNum) {
+      if (imgNum === currentImg) return;
+      currentImg = imgNum;
+
+      playSample(imgNum);
+    }
+
+    function update() {
+      const vh      = container.clientHeight;
+      const centerY = vh / 2;
+      let   closest = null;
+      let   closestDist = Infinity;
+
+      slides.forEach((slide, i) => {
+        const rect        = slide.getBoundingClientRect();
+        const slideCenter = rect.top + rect.height / 2;
+        const dist        = slideCenter - centerY;
+        const absDist     = Math.abs(dist);
+
+        if (absDist < closestDist) {
+          closestDist = absDist;
+          closest     = slide;
+        }
+
+        const t         = Math.min(absDist / (vh * 0.5), 1);
+        const eased     = t * t;
+        const direction = i % 2 === 0 ? 1 : -1;
+        const angle     = eased * 42 * direction;
+        const scale     = 1 + eased * 1;
+
+        slide.style.transform = `perspective(700px) rotateY(${angle}deg) scale(${scale})`;
+      });
+
+      if (closest) {
+        setBackground(closest.dataset.img);
+      }
+    }
+
+    container.addEventListener('scroll', () => requestAnimationFrame(update), { passive: true });
+    update();
+
+    /* ── Mobile menu ── */
+    const mobileMenu    = document.getElementById('mobile-menu');
+    const mobileTrigger = document.getElementById('mobileTrigger');
+    const mobileClose   = document.getElementById('mobile-menu-close');
+
+    const nav = document.querySelector('.nav');
+    let lastScrollY = window.scrollY;
+    window.addEventListener('scroll', () => {
+      if (window.innerWidth > 768) return;
+      const y = window.scrollY;
+      if (y < 10) {
+        nav.style.transform = '';
+      } else if (y > lastScrollY + 8) {
+        if (!mobileMenu.classList.contains('open')) nav.style.transform = 'translateY(-100%)';
+      } else if (y < lastScrollY - 8) {
+        nav.style.transform = '';
+      }
+      lastScrollY = y;
+    }, { passive: true });
+
+    function updateTriggerLabel() {
+      mobileTrigger.textContent = mobileMenu.classList.contains('open') ? '✕' : 'Menu';
+    }
+
+    mobileTrigger.addEventListener('click', e => { e.preventDefault(); mobileMenu.classList.toggle('open'); updateTriggerLabel(); });
+    mobileClose.addEventListener('click', () => { mobileMenu.classList.remove('open'); updateTriggerLabel(); });
+    mobileMenu.querySelectorAll('a').forEach(a => {
+      a.addEventListener('click', () => {
+        if (a.getAttribute('href') !== '#') { mobileMenu.classList.remove('open'); updateTriggerLabel(); }
+      });
+    });
+
+    // Apply saved mode on load
+    if (localStorage.getItem('simpleMode') === '1') {
+      document.body.classList.add('simple');
+      document.getElementById('readableToggle').classList.add('off');
+    }
+
+    document.getElementById('readableToggle').addEventListener('click', () => {
+      const btn = document.getElementById('readableToggle');
+      const simple = document.body.classList.toggle('simple');
+      btn.classList.toggle('off', simple);
+      localStorage.setItem('simpleMode', simple ? '1' : '0');
+    });
+    document.getElementById('soundToggle').addEventListener('click', () => {
+      document.getElementById('soundToggle').classList.toggle('off');
+    });
+  </script>
+
+</body>
+</html>

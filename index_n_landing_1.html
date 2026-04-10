@@ -1,0 +1,471 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Artists</title>
+  <style>
+    @font-face {
+      font-family: 'ABCPerm';
+      src: local('ABC P3rman3nt Unlicens'),
+           local('ABCPermanentUnlicens'),
+           local('ABC Permanent Unlicens');
+    }
+
+    *, *::before, *::after {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    html, body {
+      width: 100%;
+      height: 100%;
+      background: #fff;
+      overflow: hidden;
+    }
+
+    /* ── Scroll container ── */
+    .scroll-container {
+      width: 100%;
+      height: 100vh;
+      overflow-y: scroll;
+      scrollbar-width: none;
+      scroll-behavior: auto;
+    }
+    .scroll-container::-webkit-scrollbar { display: none; }
+
+    /* ── Individual artist slides ── */
+    .slide {
+      height: auto;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    /* Top spacer – height set by JS so first slide ends at viewport bottom */
+    .slide-spacer {
+      height: 50vh; /* overridden by JS */
+    }
+
+    .artist-name {
+      font-family: 'ABCPerm', 'Arial Black', Helvetica, sans-serif;
+      font-weight: 900;
+      font-size: clamp(30px, 10vw, 40px);
+      color: #000;
+      white-space: normal;
+      text-align: center;
+      max-width: 50vw;
+      line-height: 1.2;
+      /* Vertical compression */
+      transform: scaleY(0.58);
+      transform-origin: center center;
+      display: block;
+      /* Soft contour / outline */
+      text-shadow:
+        0   0   6px rgba(0,0,0,0.55),
+        1px 2px 6px rgba(0,0,0,0.30),
+       -1px 2px 6px rgba(0,0,0,0.30);
+      -webkit-text-stroke: 0.5px rgba(0,0,0,0.4);
+    }
+
+    /* ── Fixed grey oval overlay ── */
+    .brush {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      pointer-events: none;
+      z-index: 10;
+      mix-blend-mode: difference;
+      background: linear-gradient(to bottom, #b8b8b8 0%, #393939 25%, #292929 40%, #fffced 90%, #000000 100%);
+    }
+
+    /* Ensure scroll container and slides sit above bg */
+    .scroll-container { position: relative; z-index: 1; }
+
+    /* ── Top nav menu ── */
+    .nav {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      z-index: 20;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 14px 0 12px;
+      gap: clamp(16px, 3vw, 48px);
+    }
+
+    .nav a {
+      font-family: 'ABCPerm', 'Arial Black', Helvetica, sans-serif;
+      font-weight: 900;
+      font-size: clamp(10px, 1.1vw, 16px);
+      text-decoration: none;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      mix-blend-mode: difference;
+      color: #c8c8c8;
+      text-shadow:
+        0 0 8px rgba(255,255,255,0.9),
+        0 0 18px rgba(255,255,255,0.5);
+    }
+
+    .nav a:hover {
+      opacity: 0.6;
+    }
+
+    /* ── Readable mode toggle ── */
+    .readable-toggle {
+      position: fixed;
+      top: 12px;
+      right: 16px;
+      z-index: 30;
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .readable-toggle span {
+      font-family: 'ABCPerm', 'Arial Black', Helvetica, sans-serif;
+      font-size: clamp(9px, 1vw, 13px);
+      font-weight: 900;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      mix-blend-mode: difference;
+      color: #fff;
+    }
+
+    .toggle-track {
+      width: 34px;
+      height: 18px;
+      background: #888;
+      border-radius: 9px;
+      position: relative;
+      transition: background 0.25s;
+      flex-shrink: 0;
+    }
+
+    .toggle-track::after {
+      content: '';
+      position: absolute;
+      top: 3px;
+      left: 3px;
+      width: 12px;
+      height: 12px;
+      background: #fff;
+      border-radius: 50%;
+      transition: transform 0.25s;
+    }
+
+    .readable-toggle.on .toggle-track {
+      background: #000;
+    }
+
+    .readable-toggle.on .toggle-track::after {
+      transform: translateX(16px);
+    }
+
+    /* ── Readable mode active state ── */
+    body.readable .brush        { opacity: 0; }
+    body.readable .top-fade     { opacity: 0; }
+    body.readable .nav a        { mix-blend-mode: normal; color: #ff6a00; }
+    body.readable .readable-toggle span { mix-blend-mode: normal; color: #ff6a00; }
+    body.readable .artist-name  {
+      color: #000 !important;
+      text-shadow: none !important;
+      -webkit-text-stroke: 0 !important;
+      mix-blend-mode: normal !important;
+    }
+
+    /* ── Highlighted word in each sentence ── */
+    .hw {
+      cursor: alias;
+      letter-spacing: 0.04em;
+      color:#19562d;
+    }
+
+    /* ── Hover image overlay ── */
+    .img-overlay {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      z-index: 25;
+      pointer-events: none;
+      width: 42vw;
+      max-width: 620px;
+      opacity: 0;
+      transform: translate(-50%, -30%) perspective(800px) rotateY(18deg);
+      transition: opacity 0.28s cubic-bezier(0.22, 1, 0.36, 1),
+                  transform 0.28s cubic-bezier(0.22, 1, 0.36, 1);
+    }
+
+    .img-overlay.visible {
+      opacity: 1;
+      transform: translate(-50%, -50%) perspective(800px) rotateY(0deg);
+    }
+
+    .img-overlay img {
+      width: 100%;
+      height: auto;
+      display: block;
+      -webkit-mask-image: radial-gradient(ellipse 80% 80% at center, black 50%, transparent 100%);
+      mask-image: radial-gradient(ellipse 80% 80% at center, black 50%, transparent 100%);
+    }
+
+    /* ── Blur fade at top of scroll area ── */
+    .top-fade {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 200px;
+      z-index: 15;
+      pointer-events: none;
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      -webkit-mask-image: linear-gradient(to bottom, black 40%, transparent 100%);
+      mask-image: linear-gradient(to bottom, black 40%, transparent 100%);
+    }
+  </style>
+</head>
+<body>
+
+  <div class="top-fade"></div>
+
+  <nav class="nav">
+    <a href="#">Backslash</a>
+    <a href="#">Artists</a>
+    <a href="#">Timetable</a>
+    <a href="#">Day</a>
+    <a href="#">Gallery</a>
+    <a href="info.html">Info</a>
+  </nav>
+
+  <div class="readable-toggle" id="readableToggle">
+    <span>Readable</span>
+    <div class="toggle-track"></div>
+  </div>
+
+  <div class="scroll-container">
+    <div class="slide-spacer"></div>
+    <div class="slide" data-img="1"><span class="artist-name">Her voice cuts through the <span class="hw" data-img="1">silence</span> like a warm blade through fog</span></div>
+    <div class="slide" data-img="3"><span class="artist-name">Sound architecture built from the <span class="hw" data-img="3">ruins</span> of forgotten melodies</span></div>
+    <div class="slide" data-img="4"><span class="artist-name">Electric <span class="hw" data-img="4">fury</span> wrapped in silk, a contradiction that makes perfect sense</span></div>
+    <div class="slide" data-img="5"><span class="artist-name">Movement and music <span class="hw" data-img="5">collapse</span> into one single moment of pure presence</span></div>
+    <div class="slide" data-img="6"><span class="artist-name">The night always sounds different when she steps up to the <span class="hw" data-img="6">decks</span></span></div>
+    <div class="slide" data-img="7"><span class="artist-name">Bass frequencies that rearrange the furniture inside your chest <span class="hw" data-img="7">cavity</span></span></div>
+    <div class="slide" data-img="8"><span class="artist-name">Luminous frequencies bleeding quietly through the <span class="hw" data-img="8">cracks</span> of the ordinary</span></div>
+    <div class="slide" data-img="9"><span class="artist-name">Percussion conversations with the <span class="hw" data-img="9">ghosts</span> of distant continents</span></div>
+    <div class="slide" data-img="10"><span class="artist-name">The future sounds exactly like this, raw and <span class="hw" data-img="10">unfiltered</span> and completely alive</span></div>
+    <div class="slide" data-img="11"><span class="artist-name">Melodies that arrive like <span class="hw" data-img="11">letters</span> from a place you have never been</span></div>
+    <div class="slide" data-img="12"><span class="artist-name">Her sets <span class="hw" data-img="12">dissolve</span> every boundary between the body and the dancefloor</span></div>
+    <div class="slide" data-img="13"><span class="artist-name">Ancient rhythms dressed in <span class="hw" data-img="13">neon,</span> tradition wearing tomorrow's clothes</span></div>
+    <div class="slide" data-img="14"><span class="artist-name">Liquid music poured slow and deliberate into the waiting <span class="hw" data-img="14">dark</span></span></div>
+    <div class="slide" data-img="15"><span class="artist-name">Sonic <span class="hw" data-img="15">landscapes</span> that stretch far beyond what the ears expect to find</span></div>
+    <div class="slide" data-img="16"><span class="artist-name">Energy shaped like <span class="hw" data-img="16">thunder,</span> delivered with the precision of a surgeon</span></div>
+    <div class="slide" data-img="1"><span class="artist-name">Every track a small <span class="hw" data-img="1">revolution,</span> every beat a quiet declaration of intent</span></div>
+    <div class="slide" data-img="2"><span class="artist-name">She builds entire <span class="hw" data-img="2">cathedrals</span> out of 808s and whispered frequencies</span></div>
+    <div class="slide" data-img="3"><span class="artist-name">Authority in every drop, power held inside every carefully placed <span class="hw" data-img="3">silence</span></span></div>
+    <div class="slide" data-img="4"><span class="artist-name">Tenderness and <span class="hw" data-img="4">tension</span> woven together into something entirely new</span></div>
+    <div class="slide" data-img="5"><span class="artist-name">The crowd becomes one single <span class="hw" data-img="5">organism</span> whenever she touches the decks</span></div>
+    <div class="slide" data-img="6"><span class="artist-name">Industrial textures softened by a deep <span class="hw" data-img="6">instinct</span> for the profoundly human</span></div>
+    <div class="slide" data-img="7"><span class="artist-name">Wandering through sound like a <span class="hw" data-img="7">nomad</span> who always manages to find the way home</span></div>
+    <div class="slide" data-img="8"><span class="artist-name">Beats assembled carefully from the <span class="hw" data-img="8">wreckage</span> of what music used to be</span></div>
+    <div class="slide" data-img="9"><span class="artist-name">Waves of sound that break and recede and always leave you fundamentally <span class="hw" data-img="9">changed</span></span></div>
+    <div class="slide" data-img="10"><span class="artist-name">Tension built slowly, released suddenly, leaving nothing behind but <span class="hw" data-img="10">resonance</span></span></div>
+    <div class="slide" data-img="11"><span class="artist-name">Heritage reimagined with care, tradition pushed confidently past every known <span class="hw" data-img="11">limit</span></span></div>
+    <div class="slide" data-img="12"><span class="artist-name">Slow motion emotion, every single note stretched out to its furthest possible <span class="hw" data-img="12">edge</span></span></div>
+    <div class="slide" data-img="13"><span class="artist-name">Raw energy <span class="hw" data-img="13">distilled</span> into something sharp and precise and entirely necessary</span></div>
+    <div class="slide" data-img="14"><span class="artist-name">The final chapter of the night, written slowly in bass and <span class="hw" data-img="14">disappearing</span> light</span></div>
+    <div class="slide-spacer"></div>
+  </div>
+
+  <!-- Hover image overlay -->
+  <div class="img-overlay" id="imgOverlay"><img src="" alt="" id="overlayImg"></div>
+
+  <!-- Fixed grey brush stroke – mix-blend-mode: difference -->
+  <div class="brush"></div>
+
+  <script>
+    const container   = document.querySelector('.scroll-container');
+    const slides      = Array.from(document.querySelectorAll('.slide'));
+    const topSpacer   = document.querySelector('.slide-spacer');
+    const bottomSpacer = document.querySelectorAll('.slide-spacer')[1];
+
+    // Remove bottom spacer – not needed
+    if (bottomSpacer) bottomSpacer.remove();
+
+    let currentImg     = null;
+    let revealedIndex  = 0;    // index of last revealed slide
+    let maxScrollTop   = 0;    // user cannot scroll past this
+    let readableMode   = false;
+
+    // ── Readable mode toggle ──────────────────────────────────────────
+    const readableToggle = document.getElementById('readableToggle');
+    readableToggle.addEventListener('click', () => {
+      readableMode = !readableMode;
+      readableToggle.classList.toggle('on', readableMode);
+      document.body.classList.toggle('readable', readableMode);
+      update();
+    });
+
+    function setBackground(imgNum) {
+      if (imgNum === currentImg) return;
+      currentImg = imgNum;
+    }
+
+    function update() {
+      const vh      = container.clientHeight;
+      const centerY = vh * 0.82;
+      let   closest = null;
+      let   closestDist = Infinity;
+
+      slides.forEach((slide, i) => {
+        const rect        = slide.getBoundingClientRect();
+        const slideCenter = rect.top + rect.height / 2;
+        const dist        = slideCenter - centerY;
+        const absDist     = Math.abs(dist);
+
+        if (absDist < closestDist) {
+          closestDist = absDist;
+          closest     = slide;
+        }
+
+        const t         = Math.min(absDist / (vh * 0.7), 1);
+        const eased     = t * t;
+        const direction = i % 2 === 0 ? 1 : -1;
+        const angle     = eased * 60 * direction;
+        const scale     = 2 - eased * 1.4;
+
+        slide.style.transform = `perspective(700px) rotateY(${angle}deg) scale(${scale})`;
+        slide.style.minHeight = Math.max(24, scale * 100) + 'px';
+      });
+
+      if (closest) {
+        setBackground(closest.dataset.img);
+      }
+    }
+
+    // ── Auto-advance setup ────────────────────────────────────────────
+
+    function getScrollForSlide(index) {
+      const slide = slides[index];
+      // scroll position so slide's bottom is flush with viewport bottom
+      return Math.max(0, slide.offsetTop + slide.offsetHeight - container.clientHeight);
+    }
+
+    function init() {
+      // Size the top spacer so slide[0]'s bottom lands at viewport bottom at scrollTop=0
+      const vh = container.clientHeight;
+      const spacerH = Math.max(0, vh - slides[0].offsetHeight);
+      topSpacer.style.height = spacerH + 'px';
+      maxScrollTop = 0;
+      container.scrollTop = 0;
+      update();
+    }
+
+    // ── Text-to-speech ────────────────────────────────────────────────
+    function speakSlide(index) {
+      if (!window.speechSynthesis) return;
+      const text = slides[index].querySelector('.artist-name').textContent.trim();
+      window.speechSynthesis.cancel();
+      const utt = new SpeechSynthesisUtterance(text);
+      utt.rate  = 0.88;
+      utt.pitch = 1;
+      utt.lang  = 'en-US';
+      window.speechSynthesis.speak(utt);
+    }
+
+    function revealNext() {
+      if (revealedIndex >= slides.length - 1) return;
+      revealedIndex++;
+      const newMax = getScrollForSlide(revealedIndex);
+      const atBottom = Math.abs(container.scrollTop - maxScrollTop) < 60;
+      maxScrollTop = newMax;
+      if (atBottom) {
+        smoothScrollTo(container, maxScrollTop, 900);
+      }
+      speakSlide(revealedIndex);
+    }
+
+    // Custom smooth scroll (CSS scroll-behavior: auto so we can clamp mid-flight)
+    function smoothScrollTo(el, target, duration) {
+      const start    = el.scrollTop;
+      const delta    = target - start;
+      const startTime = performance.now();
+      function step(now) {
+        const elapsed = now - startTime;
+        const progress = Math.min(elapsed / duration, 1);
+        // ease-in-out cubic
+        const ease = progress < 0.5
+          ? 4 * progress * progress * progress
+          : 1 - Math.pow(-2 * progress + 2, 3) / 2;
+        el.scrollTop = start + delta * ease;
+        if (progress < 1) requestAnimationFrame(step);
+      }
+      requestAnimationFrame(step);
+    }
+
+    // ── Scroll listener: clamp + update transforms ────────────────────
+    container.addEventListener('scroll', () => {
+      if (container.scrollTop > maxScrollTop) {
+        container.scrollTop = maxScrollTop;
+      }
+      requestAnimationFrame(update);
+    });
+
+    // Kick off
+    window.addEventListener('load', () => {
+      init();
+      speakSlide(0);
+      setInterval(revealNext, 7000);
+    });
+
+    update();
+
+    // ── Highlighted word image hover ──────────────────────────────────
+    const imgOverlay = document.getElementById('imgOverlay');
+    const overlayImg = document.getElementById('overlayImg');
+    let activeHw = null;
+
+    function applyTilt(rotY, rotX) {
+      imgOverlay.style.transform =
+        `translate(-50%, -50%) perspective(800px) rotateY(${rotY}deg) rotateX(${rotX}deg)`;
+    }
+
+    document.addEventListener('mouseover', (e) => {
+      const hw = e.target.closest('.hw');
+      if (hw) {
+        activeHw = hw;
+        overlayImg.src = `content/${hw.dataset.img}.webp`;
+        imgOverlay.classList.add('visible');
+      }
+    });
+
+    document.addEventListener('mousemove', (e) => {
+      if (!activeHw) return;
+      const rect = activeHw.getBoundingClientRect();
+      const cx = rect.left + rect.width  / 2;
+      const cy = rect.top  + rect.height / 2;
+      const dx = (e.clientX - cx) / (rect.width  / 2);  // -1 to 1
+      const dy = (e.clientY - cy) / (rect.height / 2);  // -1 to 1
+      applyTilt(dx * 20, -dy * 12);
+    });
+
+    document.addEventListener('mouseout', (e) => {
+      const hw = e.target.closest('.hw');
+      if (hw && !hw.contains(e.relatedTarget)) {
+        activeHw = null;
+        imgOverlay.classList.remove('visible');
+        applyTilt(0, 0);
+      }
+    });
+  </script>
+
+</body>
+</html>

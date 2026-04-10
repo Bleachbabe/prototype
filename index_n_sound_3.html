@@ -1,0 +1,525 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Artists</title>
+  <style>
+    @font-face {
+      font-family: 'ABCPerm';
+      src: local('ABC P3rman3nt Unlicens'),
+           local('ABCPermanentUnlicens'),
+           local('ABC Permanent Unlicens');
+    }
+
+    *, *::before, *::after {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    html, body {
+      width: 100%;
+      height: 100%;
+      background: #fff;
+      overflow: hidden;
+    }
+
+    /* ── Snap scroll container ── */
+    .scroll-container {
+      width: 100%;
+      height: 100vh;
+      overflow-y: scroll;
+      scroll-snap-type: y mandatory;
+      scrollbar-width: none;
+    }
+    .scroll-container::-webkit-scrollbar { display: none; }
+
+    /* ── Individual artist slides ── */
+    .slide {
+      height: clamp(30px, 4vw, 60px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      scroll-snap-align: center;
+    }
+
+    /* Padding slides so first/last name can reach center */
+    .slide-spacer {
+      height: 50vh;
+      scroll-snap-align: none;
+    }
+
+    .artist-name {
+      font-family: 'ABCPerm', 'Arial Black', Helvetica, sans-serif;
+      font-weight: 900;
+      font-size: clamp(14px, 2vw, 30px);
+      color: #000;
+      white-space: nowrap;
+      line-height: 0.7;
+      /* Vertical compression */
+      transform: scaleY(0.58);
+      transform-origin: center center;
+      display: block;
+      /* Soft contour / outline */
+      text-shadow:
+        0   0   6px rgba(0,0,0,0.55),
+        1px 2px 6px rgba(0,0,0,0.30),
+       -1px 2px 6px rgba(0,0,0,0.30);
+      -webkit-text-stroke: 0.5px rgba(0,0,0,0.4);
+    }
+
+    /* ── Fixed grey oval overlay ── */
+    .brush {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      pointer-events: none;
+      z-index: 10;
+      mix-blend-mode: difference;
+      background: linear-gradient(to bottom, #fff 0%, #000 25%, #ff6a00 50%, #000 75%, #fff 100%);
+    }
+
+    /* Ensure scroll container and slides sit above bg */
+    .scroll-container {
+      position: relative;
+      z-index: 1;
+      height: calc(100vh - 50px);
+    }
+
+    /* ── Track recorder bar ── */
+    .trackbar {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      width: 100%;
+      height: 50px;
+      background: #1a1a1a;
+      border-top: 1px solid #333;
+      display: flex;
+      align-items: center;
+      gap: 0;
+      z-index: 100;
+      font-family: -apple-system, 'Segoe UI', monospace, sans-serif;
+    }
+
+    .trackbar-btn {
+      flex: 0 0 50px;
+      height: 100%;
+      background: none;
+      border: none;
+      border-right: 1px solid #333;
+      color: #aaa;
+      font-size: 16px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: color 0.15s, background 0.15s;
+    }
+    .trackbar-btn:hover { background: #2a2a2a; color: #fff; }
+    .trackbar-btn.playing { color: #ff6a00; }
+
+    #clear-btn {
+      font-size: 12px;
+      border-right: none;
+      border-left: 1px solid #333;
+      color: #555;
+    }
+    #clear-btn:hover { color: #ff4444; background: #2a2a2a; }
+
+    /* lane */
+    #track-lane {
+      flex: 1;
+      height: 100%;
+      overflow-x: auto;
+      overflow-y: hidden;
+      scrollbar-width: none;
+      position: relative;
+      display: flex;
+      align-items: center;
+      padding: 0 8px;
+      gap: 3px;
+    }
+    #track-lane::-webkit-scrollbar { display: none; }
+
+    .beat-chip {
+      flex: 0 0 38px;
+      height: 32px;
+      border-radius: 3px;
+      background: #2e2e2e;
+      border: 1px solid #444;
+      color: #888;
+      font-size: 8px;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background 0.08s, color 0.08s, border-color 0.08s;
+      user-select: none;
+    }
+    .beat-chip.active {
+      background: #ff6a00;
+      border-color: #ff8533;
+      color: #fff;
+    }
+
+    #empty-label {
+      color: #444;
+      font-size: 11px;
+      white-space: nowrap;
+      padding-left: 4px;
+    }
+
+    /* step counter */
+    #step-count {
+      flex: 0 0 36px;
+      font-size: 10px;
+      color: #555;
+      text-align: center;
+      border-left: 1px solid #333;
+      height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="scroll-container">
+    <div class="slide-spacer"></div>
+    <div class="slide" data-img="1"><span class="artist-name">Her voice cuts through the silence like a warm blade through fog — Anu Cato</span></div>
+    <div class="slide" data-img="2"><span class="artist-name">Rhythm flows through every gesture, every breath, every heartbeat — djadjamai</span></div>
+    <div class="slide" data-img="3"><span class="artist-name">Sound architecture built from the ruins of forgotten melodies — FUMU</span></div>
+    <div class="slide" data-img="4"><span class="artist-name">Electric fury wrapped in silk, a contradiction that makes perfect sense — Isi!</span></div>
+    <div class="slide" data-img="5"><span class="artist-name">Movement and music collapse into one single moment of pure presence — GAto</span></div>
+    <div class="slide" data-img="6"><span class="artist-name">The night always sounds different when she steps up to the decks — NaKo</span></div>
+    <div class="slide" data-img="7"><span class="artist-name">Bass frequencies that rearrange the furniture inside your chest cavity — YSEI</span></div>
+    <div class="slide" data-img="8"><span class="artist-name">Luminous frequencies bleeding quietly through the cracks of the ordinary — Lumi.B</span></div>
+    <div class="slide" data-img="9"><span class="artist-name">Percussion conversations with the ghosts of distant continents — dAko</span></div>
+    <div class="slide" data-img="10"><span class="artist-name">The future sounds exactly like this, raw and unfiltered and completely alive — PRXMX</span></div>
+    <div class="slide" data-img="11"><span class="artist-name">Melodies that arrive like letters from a place you have never been — Safi!</span></div>
+    <div class="slide" data-img="12"><span class="artist-name">Her sets dissolve every boundary between the body and the dancefloor — CXLOE</span></div>
+    <div class="slide" data-img="13"><span class="artist-name">Ancient rhythms dressed in neon, tradition wearing tomorrow's clothes — Nneka</span></div>
+    <div class="slide" data-img="14"><span class="artist-name">Liquid music poured slow and deliberate into the waiting dark — fLo</span></div>
+    <div class="slide" data-img="15"><span class="artist-name">Sonic landscapes that stretch far beyond what the ears expect to find — XANA</span></div>
+    <div class="slide" data-img="16"><span class="artist-name">Energy shaped like thunder, delivered with the precision of a surgeon — Pelo</span></div>
+    <div class="slide" data-img="1"><span class="artist-name">Every track a small revolution, every beat a quiet declaration of intent — DMBA</span></div>
+    <div class="slide" data-img="2"><span class="artist-name">She builds entire cathedrals out of 808s and whispered frequencies — Yosa!</span></div>
+    <div class="slide" data-img="3"><span class="artist-name">Authority in every drop, power held inside every carefully placed silence — KXNG</span></div>
+    <div class="slide" data-img="4"><span class="artist-name">Tenderness and tension woven together into something entirely new — Boé</span></div>
+    <div class="slide" data-img="5"><span class="artist-name">The crowd becomes one single organism whenever she touches the decks — Temi!</span></div>
+    <div class="slide" data-img="6"><span class="artist-name">Industrial textures softened by a deep instinct for the profoundly human — AxMo</span></div>
+    <div class="slide" data-img="7"><span class="artist-name">Wandering through sound like a nomad who always manages to find the way home — VVNDR</span></div>
+    <div class="slide" data-img="8"><span class="artist-name">Beats assembled carefully from the wreckage of what music used to be — Jace.B</span></div>
+    <div class="slide" data-img="9"><span class="artist-name">Waves of sound that break and recede and always leave you fundamentally changed — KYMA</span></div>
+    <div class="slide" data-img="10"><span class="artist-name">Tension built slowly, released suddenly, leaving nothing behind but resonance — Prxz</span></div>
+    <div class="slide" data-img="11"><span class="artist-name">Heritage reimagined with care, tradition pushed confidently past every known limit — OwuSu</span></div>
+    <div class="slide" data-img="12"><span class="artist-name">Slow motion emotion, every single note stretched out to its furthest possible edge — SLWMO</span></div>
+    <div class="slide" data-img="13"><span class="artist-name">Raw energy distilled into something sharp and precise and entirely necessary — Rexx!</span></div>
+    <div class="slide" data-img="14"><span class="artist-name">The final chapter of the night, written slowly in bass and disappearing light — BuJu</span></div>
+    <div class="slide-spacer"></div>
+  </div>
+
+  <!-- Fixed grey brush stroke – mix-blend-mode: difference -->
+  <div class="brush"></div>
+
+  <!-- Track recorder bar -->
+  <div class="trackbar">
+    <button class="trackbar-btn" id="play-btn" title="Play / Stop">▶</button>
+    <div id="track-lane">
+      <span id="empty-label">scroll to record beats …</span>
+    </div>
+    <span id="step-count">0</span>
+    <button class="trackbar-btn" id="clear-btn" title="Clear">✕</button>
+  </div>
+
+  <script>
+    const container = document.querySelector('.scroll-container');
+    const slides    = Array.from(document.querySelectorAll('.slide'));
+
+    let currentImg = null;
+
+    // ── Track recorder state (declared first so setBackground can use it) ──
+    const STEP_SEC  = 0.10;
+    const soundLabels = {
+      1:'SNRA', 2:'KICK', 3:'HHAT', 4:'CLAP', 5:'TOM+',
+      6:'TOM-', 7:'OHAT', 8:'RIM',  9:'808',  10:'SHK2',
+      11:'CRSH', 12:'CLAV', 13:'SNRB', 14:'SHKR', 15:'PERC', 16:'SUB'
+    };
+    let sequence   = [];
+    let chips      = [];
+    let isPlaying  = false;
+    let loopTimer  = null;
+    let rafId      = null;
+    let loopStartT = 0;
+
+    // ── Audio synthesis ──────────────────────────────────────────────
+    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
+    function noise(duration, filter = null, filterFreq = 2000, gain = 0.6) {
+      const buf  = audioCtx.createBuffer(1, audioCtx.sampleRate * duration, audioCtx.sampleRate);
+      const data = buf.getChannelData(0);
+      for (let i = 0; i < data.length; i++) data[i] = Math.random() * 2 - 1;
+      const src = audioCtx.createBufferSource();
+      src.buffer = buf;
+      const g = audioCtx.createGain();
+      if (filter) {
+        const f = audioCtx.createBiquadFilter();
+        f.type = filter; f.frequency.value = filterFreq;
+        src.connect(f); f.connect(g);
+      } else {
+        src.connect(g);
+      }
+      g.connect(audioCtx.destination);
+      return { src, gain: g };
+    }
+
+    function osc(freq, type = 'sine') {
+      const o = audioCtx.createOscillator();
+      const g = audioCtx.createGain();
+      o.type = type; o.frequency.value = freq;
+      o.connect(g); g.connect(audioCtx.destination);
+      return { osc: o, gain: g };
+    }
+
+    function env(gainNode, peak, decay, t) {
+      gainNode.gain.setValueAtTime(peak, t);
+      gainNode.gain.exponentialRampToValueAtTime(0.0001, t + decay);
+    }
+
+    const sounds = {
+      1:  (t) => { // Snare A
+            const { src, gain: g } = noise(0.2, 'bandpass', 800, 0.7);
+            env(g, 0.7, 0.18, t); g.gain.setValueAtTime(0.7, t); src.start(t); src.stop(t + 0.2);
+            const { osc: o, gain: og } = osc(200); env(og, 0.4, 0.08, t); o.start(t); o.stop(t + 0.1);
+          },
+      2:  (t) => { // Kick
+            const { osc: o, gain: g } = osc(60);
+            o.frequency.setValueAtTime(160, t); o.frequency.exponentialRampToValueAtTime(40, t + 0.1);
+            env(g, 0.9, 0.3, t); o.start(t); o.stop(t + 0.35);
+          },
+      3:  (t) => { // Closed hi-hat
+            const { src, gain: g } = noise(0.08, 'highpass', 8000, 0.4);
+            env(g, 0.4, 0.05, t); g.gain.setValueAtTime(0.4, t); src.start(t); src.stop(t + 0.08);
+          },
+      4:  (t) => { // Clap
+            [0, 0.01, 0.02].forEach(offset => {
+              const { src, gain: g } = noise(0.07, 'bandpass', 1200, 0.5);
+              g.gain.setValueAtTime(0.5, t + offset);
+              g.gain.exponentialRampToValueAtTime(0.0001, t + offset + 0.06);
+              src.start(t + offset); src.stop(t + offset + 0.07);
+            });
+          },
+      5:  (t) => { // Tom high
+            const { osc: o, gain: g } = osc(320);
+            o.frequency.setValueAtTime(320, t); o.frequency.exponentialRampToValueAtTime(180, t + 0.15);
+            env(g, 0.7, 0.2, t); o.start(t); o.stop(t + 0.25);
+          },
+      6:  (t) => { // Tom low
+            const { osc: o, gain: g } = osc(100);
+            o.frequency.setValueAtTime(100, t); o.frequency.exponentialRampToValueAtTime(55, t + 0.2);
+            env(g, 0.8, 0.3, t); o.start(t); o.stop(t + 0.35);
+          },
+      7:  (t) => { // Open hi-hat
+            const { src, gain: g } = noise(0.4, 'highpass', 7000, 0.35);
+            env(g, 0.35, 0.35, t); g.gain.setValueAtTime(0.35, t); src.start(t); src.stop(t + 0.4);
+          },
+      8:  (t) => { // Rim shot
+            const { osc: o, gain: g } = osc(900, 'triangle');
+            env(g, 0.6, 0.04, t); o.start(t); o.stop(t + 0.05);
+            const { src, gain: ng } = noise(0.04, 'bandpass', 1800, 0.3);
+            env(ng, 0.3, 0.03, t); ng.gain.setValueAtTime(0.3, t); src.start(t); src.stop(t + 0.04);
+          },
+      9:  (t) => { // 808 kick
+            const { osc: o, gain: g } = osc(55);
+            o.frequency.setValueAtTime(200, t); o.frequency.exponentialRampToValueAtTime(40, t + 0.15);
+            env(g, 1.0, 0.6, t); o.start(t); o.stop(t + 0.7);
+          },
+      10: (t) => { // Shaker alt
+            const { src, gain: g } = noise(0.05, 'bandpass', 6000, 0.2);
+            env(g, 0.2, 0.04, t); g.gain.setValueAtTime(0.2, t); src.start(t); src.stop(t + 0.05);
+          },
+      11: (t) => { // Crash
+            const { src, gain: g } = noise(1.0, 'highpass', 5000, 0.3);
+            g.gain.setValueAtTime(0.3, t); g.gain.exponentialRampToValueAtTime(0.0001, t + 1.0);
+            src.start(t); src.stop(t + 1.0);
+          },
+      12: (t) => { // Clave
+            const { osc: o, gain: g } = osc(1400, 'sine');
+            env(g, 0.7, 0.025, t); o.start(t); o.stop(t + 0.03);
+          },
+      13: (t) => { // Snare B (deeper)
+            const { src, gain: g } = noise(0.25, 'bandpass', 500, 0.6);
+            env(g, 0.6, 0.22, t); g.gain.setValueAtTime(0.6, t); src.start(t); src.stop(t + 0.25);
+            const { osc: o, gain: og } = osc(120); env(og, 0.5, 0.1, t); o.start(t); o.stop(t + 0.12);
+          },
+      14: (t) => { // Shaker
+            const { src, gain: g } = noise(0.06, 'bandpass', 5000, 0.25);
+            env(g, 0.25, 0.05, t); g.gain.setValueAtTime(0.25, t); src.start(t); src.stop(t + 0.06);
+          },
+      15: (t) => { // Synth perc
+            const { osc: o, gain: g } = osc(440, 'triangle');
+            o.frequency.setValueAtTime(660, t); o.frequency.exponentialRampToValueAtTime(220, t + 0.12);
+            env(g, 0.6, 0.15, t); o.start(t); o.stop(t + 0.2);
+          },
+      16: (t) => { // Deep sub kick
+            const { osc: o, gain: g } = osc(40);
+            o.frequency.setValueAtTime(120, t); o.frequency.exponentialRampToValueAtTime(30, t + 0.2);
+            env(g, 1.0, 0.5, t); o.start(t); o.stop(t + 0.55);
+          },
+    };
+
+    function playSample(imgNum) {
+      if (audioCtx.state === 'suspended') audioCtx.resume();
+      const fn = sounds[parseInt(imgNum)];
+      if (fn) fn(audioCtx.currentTime);
+    }
+
+    // ── End audio ────────────────────────────────────────────────────
+
+    function setBackground(imgNum) {
+      if (imgNum === currentImg) return;
+      currentImg = imgNum;
+
+      playSample(imgNum);
+
+      // Record beat during live scroll (not during playback)
+      if (!isPlaying) recordBeat(imgNum);
+    }
+
+    function update() {
+      const vh      = container.clientHeight;
+      const centerY = vh / 2;
+      let   closest = null;
+      let   closestDist = Infinity;
+
+      slides.forEach((slide, i) => {
+        const rect        = slide.getBoundingClientRect();
+        const slideCenter = rect.top + rect.height / 2;
+        const dist        = slideCenter - centerY;
+        const absDist     = Math.abs(dist);
+
+        if (absDist < closestDist) {
+          closestDist = absDist;
+          closest     = slide;
+        }
+
+        const t         = Math.min(absDist / (vh * 0.5), 1);
+        const eased     = t * t;
+        const direction = i % 2 === 0 ? 1 : -1;
+        const angle     = eased * 42 * direction;
+        const scale     = 1 + eased * 3;
+
+        slide.style.transform = `perspective(700px) rotateY(${angle}deg) scale(${scale})`;
+      });
+
+      if (closest) {
+        setBackground(closest.dataset.img);
+      }
+    }
+
+    // ── Track recorder ────────────────────────────────────────────────
+    const playBtn    = document.getElementById('play-btn');
+    const clearBtn   = document.getElementById('clear-btn');
+    const lane       = document.getElementById('track-lane');
+    const emptyLabel = document.getElementById('empty-label');
+    const stepCount  = document.getElementById('step-count');
+
+    container.addEventListener('scroll', () => requestAnimationFrame(update), { passive: true });
+    update();
+
+    // Record a beat (called from setBackground, only while not playing)
+    function recordBeat(imgNum) {
+      const n = parseInt(imgNum);
+      sequence.push(n);
+
+      if (emptyLabel.parentNode) emptyLabel.remove();
+
+      const chip = document.createElement('div');
+      chip.className = 'beat-chip';
+      chip.textContent = soundLabels[n] || n;
+      lane.appendChild(chip);
+      chips.push(chip);
+
+      // Auto-scroll lane to show latest
+      lane.scrollLeft = lane.scrollWidth;
+      stepCount.textContent = sequence.length;
+    }
+
+    // Highlight chip at index i
+    function highlightStep(i) {
+      chips.forEach((c, j) => c.classList.toggle('active', j === i));
+      // Scroll chip into view in lane
+      if (chips[i]) chips[i].scrollIntoView({ inline: 'nearest', behavior: 'smooth' });
+    }
+
+    // Playback loop using AudioContext scheduling
+    function scheduleLoop(startT) {
+      if (!isPlaying) return;
+      const loopDur = sequence.length * STEP_SEC;
+
+      sequence.forEach((n, i) => {
+        const fn = sounds[n];
+        if (fn) fn(startT + i * STEP_SEC);
+      });
+
+      // Animate playhead via rAF
+      loopStartT = startT;
+      function frame() {
+        if (!isPlaying) return;
+        const elapsed = (audioCtx.currentTime - loopStartT);
+        const step = Math.floor(elapsed / STEP_SEC) % sequence.length;
+        highlightStep(step);
+        rafId = requestAnimationFrame(frame);
+      }
+      cancelAnimationFrame(rafId);
+      rafId = requestAnimationFrame(frame);
+
+      // Schedule next loop slightly before end
+      loopTimer = setTimeout(() => {
+        if (isPlaying) scheduleLoop(startT + loopDur);
+      }, (loopDur - 0.05) * 1000);
+    }
+
+    function startPlay() {
+      if (sequence.length === 0) return;
+      if (audioCtx.state === 'suspended') audioCtx.resume();
+      isPlaying = true;
+      playBtn.textContent = '■';
+      playBtn.classList.add('playing');
+      scheduleLoop(audioCtx.currentTime + 0.05);
+    }
+
+    function stopPlay() {
+      isPlaying = false;
+      clearTimeout(loopTimer);
+      cancelAnimationFrame(rafId);
+      playBtn.textContent = '▶';
+      playBtn.classList.remove('playing');
+      chips.forEach(c => c.classList.remove('active'));
+    }
+
+    playBtn.addEventListener('click', () => {
+      isPlaying ? stopPlay() : startPlay();
+    });
+
+    clearBtn.addEventListener('click', () => {
+      stopPlay();
+      sequence = [];
+      chips = [];
+      lane.innerHTML = '';
+      lane.appendChild(emptyLabel);
+      stepCount.textContent = '0';
+    });
+
+    // ── End track recorder ─────────────────────────────────────────────
+  </script>
+
+</body>
+</html>

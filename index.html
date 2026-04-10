@@ -1,0 +1,846 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Backslash Festival</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Roboto+Flex:opsz,wdth,wght@8..144,25..151,100..900&display=swap" rel="stylesheet">
+  <style>
+
+    *, *::before, *::after {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    html, body {
+      width: 100%;
+      height: 100%;
+      background: #fff;
+      overflow: hidden;
+    }
+
+    /* ═══════════════════════════════════════
+       BASE LAYER — Landing page
+    ═══════════════════════════════════════ */
+
+    .scroll-container {
+      width: 100%;
+      height: 100vh;
+      overflow-y: scroll;
+      overflow-x: hidden;
+      scrollbar-width: none;
+      scroll-behavior: auto;
+      position: relative;
+      z-index: 1;
+    }
+    .scroll-container::-webkit-scrollbar { display: none; }
+
+    .slide {
+      height: auto;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .slide-spacer { height: 50vh; }
+
+    .artist-name {
+      font-family: 'Roboto Flex', 'Arial Black', Helvetica, sans-serif;
+      font-weight: 700;
+      font-variation-settings:
+        'wdth' 101,
+        'opsz' 90,
+        'GRAD' 150,
+        'slnt' 0,
+        'XTRA' 468,
+        'XOPQ' 96,
+        'YOPQ' 79,
+        'YTLC' 514,
+        'YTUC' 712,
+        'YTDE' -203,
+        'YTAS' 750,
+        'YTFI' 738;
+      font-size: clamp(30px, 5vw, 40px);
+      color: #000;
+      white-space: normal;
+      text-align: center;
+      /* The centered slide is scaled ×2 by JS, so 44vw × 2 = 88vw apparent width */
+      max-width: 44vw;
+      line-height: 1.2;
+      word-break: break-word;
+      overflow-wrap: break-word;
+      transform: scaleY(0.58);
+      transform-origin: center center;
+      display: block;
+      text-shadow:
+        0   0   6px rgba(0,0,0,0.55),
+        1px 2px 6px rgba(0,0,0,0.30),
+       -1px 2px 6px rgba(0,0,0,0.30);
+      -webkit-text-stroke: 0.5px rgba(0,0,0,0.4);
+    }
+
+    .brush {
+      position: fixed;
+      top: 0; left: 0;
+      width: 100vw; height: 100vh;
+      pointer-events: none;
+      z-index: 10;
+      mix-blend-mode: difference;
+      background: linear-gradient(to bottom, #b8b8b8 0%, #393939 25%, #292929 40%, #fffced 90%, #000000 100%);
+    }
+
+    .nav {
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%;
+      z-index: 300;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 14px 0 12px;
+      gap: clamp(16px, 3vw, 48px);
+    }
+
+    .nav a {
+      font-family: 'Roboto Flex', 'Arial Black', Helvetica, sans-serif;
+      font-weight: 900;
+      font-size: clamp(14px, 1.8vw, 26px);
+      text-decoration: none;
+      letter-spacing: 0.08em;
+      mix-blend-mode: difference;
+      color: #c8c8c8;
+      text-shadow: 0 0 8px rgba(255,255,255,0.9), 0 0 18px rgba(255,255,255,0.5);
+    }
+    .nav a:hover { opacity: 0.6; }
+
+    .nav::before {
+      content: '';
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      height: 110px;
+      z-index: -1;
+      backdrop-filter: blur(24px);
+      -webkit-backdrop-filter: blur(24px);
+      background: linear-gradient(to bottom, rgba(0,0,0,0.45) 0%, rgba(0,0,0,0.1) 70%, transparent 100%);
+      pointer-events: none;
+    }
+
+    /* Icon buttons — eye (right) & speaker (left) */
+    .icon-btn {
+      position: fixed;
+      top: 16px;
+      z-index: 600;
+      background: none;
+      border: none;
+      cursor: pointer;
+      padding: 4px;
+      line-height: 0;
+      color: #fff;
+      mix-blend-mode: difference;
+      -webkit-tap-highlight-color: transparent;
+    }
+    #readableToggle { right: 16px; }
+    #soundToggle    { left: 16px; }
+
+    /* Cross-line draws in when .off */
+    .icon-btn .cross-line {
+      stroke-dasharray: 32;
+      stroke-dashoffset: 32;
+      transition: stroke-dashoffset 0.28s ease;
+    }
+    .icon-btn.off .cross-line { stroke-dashoffset: 0; }
+
+    body.readable .brush    { opacity: 0; }
+    body.readable .top-fade { opacity: 0; }
+    body.readable .nav a    { mix-blend-mode: normal; color: #000; text-shadow: none; }
+    body.readable .icon-btn { mix-blend-mode: normal; color: #000; }
+    body.readable .nav::before { background: rgba(255,255,255,0.85); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); }
+    body.readable .artist-name {
+      color: #000 !important;
+      text-shadow: none !important;
+      -webkit-text-stroke: 0 !important;
+      mix-blend-mode: normal !important;
+    }
+
+    .hw {
+      cursor: alias;
+      letter-spacing: 0.04em;
+      opacity: 0.6;
+    }
+    .hw:hover {
+      opacity: 0.5;
+    }
+
+    .img-overlay {
+      position: fixed;
+      top: 50%; left: 50%;
+      z-index: 25;
+      pointer-events: none;
+      width: 42vw;
+      max-width: 620px;
+      opacity: 0;
+      transform: translate(-50%, -30%) perspective(800px) rotateY(18deg);
+      transition: opacity 0.28s cubic-bezier(0.22, 1, 0.36, 1),
+                  transform 0.28s cubic-bezier(0.22, 1, 0.36, 1);
+    }
+    .img-overlay.visible {
+      opacity: 1;
+      transform: translate(-50%, -50%) perspective(800px) rotateY(0deg);
+    }
+    .img-overlay img {
+      width: 100%; height: auto;
+      display: block;
+      -webkit-mask-image: radial-gradient(ellipse 80% 80% at center, black 50%, transparent 100%);
+      mask-image: radial-gradient(ellipse 80% 80% at center, black 50%, transparent 100%);
+    }
+
+    .top-fade {
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%; height: 200px;
+      z-index: 15;
+      pointer-events: none;
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      -webkit-mask-image: linear-gradient(to bottom, black 40%, transparent 100%);
+      mask-image: linear-gradient(to bottom, black 40%, transparent 100%);
+    }
+
+    /* ═══════════════════════════════════════
+       OVERLAY — Dismissable on click
+    ═══════════════════════════════════════ */
+
+    #site-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 500;
+      cursor: pointer;
+      background: #fff;
+      transition: opacity 0.7s ease;
+    }
+    #site-overlay.dismissed {
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .scroll-container {
+      opacity: 0;
+      transform: translateY(48px);
+    }
+    .scroll-container.revealed {
+      opacity: 1;
+      transform: translateY(0);
+      transition: opacity 0.8s ease, transform 0.9s cubic-bezier(0.25, 0, 0, 1);
+    }
+
+    .ov-scroll-container {
+      width: 100%; height: 100vh;
+      overflow-y: scroll;
+      scroll-snap-type: y mandatory;
+      scrollbar-width: none;
+      position: relative;
+      z-index: 1;
+    }
+    .ov-scroll-container::-webkit-scrollbar { display: none; }
+
+    .ov-slide {
+      height: clamp(70px, 10vw, 140px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      scroll-snap-align: center;
+    }
+
+    .ov-slide-spacer {
+      height: 50vh;
+      scroll-snap-align: none;
+    }
+
+    .ov-artist-name {
+      font-family: 'Roboto Flex', 'Arial Black', Helvetica, sans-serif;
+      font-weight: 700;
+      font-variation-settings:
+        'wdth' 101,
+        'opsz' 90,
+        'GRAD' 150,
+        'slnt' 0,
+        'XTRA' 468,
+        'XOPQ' 96,
+        'YOPQ' 79,
+        'YTLC' 514,
+        'YTUC' 712,
+        'YTDE' -203,
+        'YTAS' 750,
+        'YTFI' 738;
+      font-size: clamp(72px, 14vw, 220px);
+      color: #000;
+      white-space: nowrap;
+      line-height: 1;
+      transform: scaleY(0.58);
+      transform-origin: center center;
+      display: block;
+      text-shadow:
+        0   0   6px rgba(0,0,0,0.55),
+        1px 2px 6px rgba(0,0,0,0.30),
+       -1px 2px 6px rgba(0,0,0,0.30);
+      -webkit-text-stroke: 0.5px rgba(0,0,0,0.4);
+    }
+
+    .ov-brush {
+      position: fixed;
+      top: 0; left: 0;
+      width: 100vw; height: 100vh;
+      pointer-events: none;
+      z-index: 10;
+      mix-blend-mode: difference;
+      background: linear-gradient(to bottom, #fff 0%, #313131 25%, #fffee9 50%, #313131 75%, #fff 100%);
+    }
+
+
+    /* ═══════════════════════════════════════
+       MOBILE MENU
+    ═══════════════════════════════════════ */
+
+    /* Hide menu trigger and menu on desktop */
+    #mobileTrigger { display: none; }
+    #mobile-menu { display: none; }
+
+    @media (max-width: 768px) {
+      .nav a { display: none; }
+      #mobile-menu { display: flex; }
+      #mobileTrigger {
+        display: block;
+        font-size: clamp(18px, 6vw, 28px);
+        mix-blend-mode: difference;
+        color: #c8c8c8;
+        text-shadow: 0 0 8px rgba(255,255,255,0.9), 0 0 18px rgba(255,255,255,0.5);
+      }
+      .nav { justify-content: center; }
+
+      /* Smaller catchphrase text on mobile */
+      .artist-name {
+        font-size: clamp(25px, 3.5vw, 18px);
+        max-width: 44vw;
+      }
+    }
+
+    /* Slide-down mobile menu */
+    #mobile-menu {
+      position: fixed;
+      top: 0; left: 0; width: 100%; height: calc(65vh + 48px);
+      z-index: 200;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-start;
+      padding-top: 90px;
+      gap: clamp(4px, 1.2vh, 12px);
+      background: rgba(0, 0, 0, 0.3);
+      backdrop-filter: blur(28px);
+      -webkit-backdrop-filter: blur(28px);
+      -webkit-mask-image: linear-gradient(to bottom, black 75%, transparent 100%);
+      mask-image: linear-gradient(to bottom, black 75%, transparent 100%);
+      transform: translateY(calc(-100% - 40px));
+      transition: transform 0.4s cubic-bezier(0.25, 0, 0, 1);
+      pointer-events: none;
+    }
+    #mobile-menu.open {
+      transform: translateY(0);
+      pointer-events: auto;
+    }
+    #mobile-menu a {
+      font-family: 'Roboto Flex', 'Arial Black', Helvetica, sans-serif;
+      font-weight: 900;
+      font-size: clamp(24px, 7vw, 48px);
+      text-decoration: none;
+      letter-spacing: 0.06em;
+      color: #c8c8c8;
+      mix-blend-mode: difference;
+      transform: scaleY(0.62);
+      transform-origin: center center;
+      display: block;
+      transition: opacity 0.2s;
+    }
+    #mobile-menu a:hover,
+    #mobile-menu a:active { opacity: 0.5; }
+    #mobile-menu-close {
+      position: absolute;
+      top: 10px; right: 14px;
+      background: none; border: none;
+      cursor: pointer; color: #fff;
+      font-size: 20px; font-weight: 900;
+      opacity: 0.6; padding: 4px 8px;
+    }
+    #mobile-menu-close:hover { opacity: 1; }
+
+    /* Click hint */
+    #site-overlay::after {
+      content: 'click to enter';
+      position: fixed;
+      bottom: 32px;
+      left: 50%;
+      transform: translateX(-50%);
+      font-family: 'Roboto Flex', 'Arial Black', Helvetica, sans-serif;
+      font-size: clamp(9px, 1vw, 12px);
+      font-weight: 900;
+      text-transform: uppercase;
+      letter-spacing: 0.18em;
+      color: #999;
+      mix-blend-mode: difference;
+      z-index: 20;
+      pointer-events: none;
+      animation: pulse 2.5s ease-in-out infinite;
+    }
+    @keyframes pulse {
+      0%, 100% { opacity: 0.4; }
+      50%       { opacity: 1; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ── BASE LAYER: Landing page ───────────────────────────────── -->
+  <div class="top-fade"></div>
+
+  <nav class="nav">
+    <a href="index.html">Backslash</a>
+    <a href="index_n_color_3.html">Artists</a>
+    <a href="index_n_timetable_1.html">Timetable</a>
+    <a href="#">Day</a>
+    <a href="index_n_gallery.html">Gallery</a>
+    <a href="info.html">Info</a>
+    <a href="#" id="mobileTrigger">Menu</a>
+  </nav>
+
+  <!-- Mobile menu overlay -->
+  <div id="mobile-menu">
+    <button id="mobile-menu-close">&#x2715;</button>
+    <a href="index.html">Backslash</a>
+    <a href="index_n_color_3.html">Artists</a>
+    <a href="index_n_timetable_1.html">Timetable</a>
+    <a href="#">Day</a>
+    <a href="index_n_gallery.html">Gallery</a>
+    <a href="info.html">Info</a>
+  </div>
+
+  <!-- Eye icon: right — toggles readable mode. Cross appears when readable is ON -->
+  <button class="icon-btn" id="readableToggle" aria-label="Toggle readable mode">
+    <svg width="26" height="26" viewBox="0 0 26 26" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+      <ellipse cx="13" cy="13" rx="9" ry="5.5"/>
+      <circle cx="13" cy="13" r="2.5" fill="currentColor" stroke="none"/>
+      <line class="cross-line" x1="3" y1="3" x2="23" y2="23"/>
+    </svg>
+  </button>
+
+  <!-- Speaker icon: left — toggles voice. Cross appears when voice is OFF -->
+  <button class="icon-btn" id="soundToggle" aria-label="Toggle voice">
+    <svg width="26" height="26" viewBox="0 0 26 26" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+      <polygon points="5,9 5,17 9,17 15,21 15,5 9,9" fill="currentColor" stroke="none"/>
+      <path d="M18,10 Q22,13 18,16"/>
+      <line class="cross-line" x1="3" y1="3" x2="23" y2="23"/>
+    </svg>
+  </button>
+
+  <div class="scroll-container">
+    <div class="slide-spacer"></div>
+    <div class="slide" data-img="1"><span class="artist-name">Fully tinted glasses on my way to <span class="hw" data-img="1">Backslash Festival</span> made me realise I'm a star</span></div>
+    <div class="slide" data-img="3"><span class="artist-name"><span class="hw" data-img="3">Anu Cato</span> has found a sound incomparable to all of Zürich</span></div>
+    <div class="slide" data-img="4"><span class="artist-name">By leaving theis synthesizer in the glissening sun all day</span></div>
+    <div class="slide" data-img="5"><span class="artist-name">Wait tell me your not cheating on me with these AI SLOPS</span></div>
+    <div class="slide" data-img="6"><span class="artist-name">Why does everyone keep telling me to touch some grass?</span></div>
+    <div class="slide" data-img="7"><span class="artist-name">Those 808s massage my brain with dirty hands leaving behind the so called brainrot</span></div>
+    <div class="slide" data-img="1"><span class="artist-name">Fully tinted glasses on my way to <span class="hw" data-img="1">Backslash Festival</span> made me realise I'm a star</span></div>
+    <div class="slide" data-img="3"><span class="artist-name"><span class="hw" data-img="3">Anu Cato</span> has found a sound incomparable to all of Zürich</span></div>
+    <div class="slide" data-img="4"><span class="artist-name">By leaving theis synthesizer in the glissening sun all day</span></div>
+    <div class="slide" data-img="5"><span class="artist-name">Wait tell me your not cheating on me with these AI SLOPS</span></div>
+    <div class="slide" data-img="6"><span class="artist-name">Why does everyone keep telling me to touch some grass?</span></div>
+    <div class="slide" data-img="7"><span class="artist-name">Those 808s massage my brain with dirty hands leaving behind the so called brainrot</span></div>
+    <div class="slide" data-img="1"><span class="artist-name">Fully tinted glasses on my way to <span class="hw" data-img="1">Backslash Festival</span> made me realise I'm a star</span></div>
+    <div class="slide" data-img="3"><span class="artist-name"><span class="hw" data-img="3">Anu Cato</span> has found a sound incomparable to all of Zürich</span></div>
+    <div class="slide" data-img="4"><span class="artist-name">By leaving theis synthesizer in the glissening sun all day</span></div>
+    <div class="slide" data-img="5"><span class="artist-name">Wait tell me your not cheating on me with these AI SLOPS</span></div>
+    <div class="slide" data-img="6"><span class="artist-name">Why does everyone keep telling me to touch some grass?</span></div>
+    <div class="slide" data-img="7"><span class="artist-name">Those 808s massage my brain with dirty hands leaving behind the so called brainrot</span></div>
+  </div>
+
+  <div class="img-overlay" id="imgOverlay"><img src="" alt="" id="overlayImg"></div>
+  <div class="brush"></div>
+
+  <!-- ── OVERLAY: Dismissed on click ───────────────────────────── -->
+  <div id="site-overlay">
+    <div class="ov-scroll-container" id="ovContainer">
+      <div class="ov-slide-spacer"></div>
+      <div class="ov-slide" data-img="1"><span class="ov-artist-name">Backslash</span></div>
+      <div class="ov-slide" data-img="2"><span class="ov-artist-name">20.07.26</span></div>
+      <div class="ov-slide" data-img="3"><span class="ov-artist-name">Gessneralle</span></div>
+      <div class="ov-slide" data-img="4"><span class="ov-artist-name">luvy*</span></div>
+      <div class="ov-slide-spacer"></div>
+    </div>
+
+    <div class="ov-brush"></div>
+  </div>
+
+  <script>
+    /* ═══════════════════════════════════
+       LANDING PAGE JS
+    ═══════════════════════════════════ */
+    const container   = document.querySelector('.scroll-container');
+    const slides      = Array.from(document.querySelectorAll('.slide'));
+    const topSpacer   = document.querySelector('.slide-spacer');
+
+    let currentImg    = null;
+    let revealedIndex = 0;
+    let maxScrollTop  = 0;
+    let readableMode  = false;
+    let soundMode     = localStorage.getItem('soundMode') !== '0';
+
+    // Apply saved mode on load
+    if (localStorage.getItem('simpleMode') === '1') {
+      readableMode = true;
+      document.body.classList.add('readable');
+      document.getElementById('readableToggle').classList.add('off');
+    }
+
+    // Eye: cross appears when readable mode is ON (artistic view "crossed out")
+    document.getElementById('readableToggle').addEventListener('click', () => {
+      readableMode = !readableMode;
+      document.getElementById('readableToggle').classList.toggle('off', readableMode);
+      document.body.classList.toggle('readable', readableMode);
+      localStorage.setItem('simpleMode', readableMode ? '1' : '0');
+      update();
+    });
+
+    // Apply saved sound state on load
+    if (!soundMode) document.getElementById('soundToggle').classList.add('off');
+
+    // Speaker: mute/unmute — timer keeps running either way
+    document.getElementById('soundToggle').addEventListener('click', () => {
+      soundMode = !soundMode;
+      document.getElementById('soundToggle').classList.toggle('off', !soundMode);
+      localStorage.setItem('soundMode', soundMode ? '1' : '0');
+      if (!soundMode) {
+        voices.forEach(v => { v.pause(); v.currentTime = 0; });
+      }
+      // no restart needed — slideTimer is always running
+    });
+
+    function update() {
+      const vh      = container.clientHeight;
+      const centerY = vh * 0.82;
+      let   closest = null, closestDist = Infinity;
+
+      slides.forEach((slide, i) => {
+        const rect        = slide.getBoundingClientRect();
+        const slideCenter = rect.top + rect.height / 2;
+        const absDist     = Math.abs(slideCenter - centerY);
+
+        if (absDist < closestDist) { closestDist = absDist; closest = slide; }
+
+        const t     = Math.min(absDist / (vh * 0.7), 1);
+        const eased = t * t;
+        const dir   = i % 2 === 0 ? 1 : -1;
+        const angle = eased * 60 * dir;
+        const scale = 2 - eased * 1.4;
+
+        slide.style.transform = `perspective(700px) rotateY(${angle}deg) scale(${scale})`;
+        slide.style.minHeight = Math.max(24, scale * 100) + 'px';
+      });
+
+      if (closest && closest.dataset.img !== currentImg) currentImg = closest.dataset.img;
+    }
+
+    function getScrollForSlide(index) {
+      const s = slides[index];
+      return Math.max(0, s.offsetTop + s.offsetHeight - container.clientHeight);
+    }
+
+    function init() {
+      const spacerH = Math.max(0, container.clientHeight - slides[0].offsetHeight);
+      topSpacer.style.height = spacerH + 'px';
+      maxScrollTop = 0;
+      container.scrollTop = 0;
+      update();
+    }
+
+    const voices = Array.from({length: 7}, (_, i) => new Audio(`content/voice${i + 1}.mp3`));
+    let voiceIndex = 0;
+    let slideTimer = null;
+
+    function scheduleNext(delay) {
+      clearTimeout(slideTimer);
+      slideTimer = setTimeout(() => {
+        voiceIndex = (voiceIndex + 1) % 7;
+        revealNext();
+        speakSlide();
+      }, delay);
+    }
+
+    function speakSlide() {
+      const audio = voices[voiceIndex];
+      audio.currentTime = 0;
+
+      if (soundMode) {
+        audio.play().catch(() => {});
+        // schedule next after audio duration (+ 1s pause); fallback 4s if not loaded
+        const dur = (audio.duration && isFinite(audio.duration)) ? audio.duration * 1000 + 1000 : 4000;
+        scheduleNext(dur);
+      } else {
+        // muted: still advance on same timing using preloaded duration
+        const dur = (audio.duration && isFinite(audio.duration)) ? audio.duration * 1000 + 1000 : 4000;
+        scheduleNext(dur);
+      }
+    }
+
+    function smoothScrollTo(el, target, duration) {
+      const start = el.scrollTop, delta = target - start, t0 = performance.now();
+      function step(now) {
+        const p = Math.min((now - t0) / duration, 1);
+        const e = p < 0.5 ? 4*p*p*p : 1 - Math.pow(-2*p+2, 3)/2;
+        el.scrollTop = start + delta * e;
+        if (p < 1) requestAnimationFrame(step);
+      }
+      requestAnimationFrame(step);
+    }
+
+    function revealNext() {
+      if (revealedIndex >= slides.length - 1) return;
+      revealedIndex++;
+      const newMax   = getScrollForSlide(revealedIndex);
+      const atBottom = Math.abs(container.scrollTop - maxScrollTop) < 60;
+      maxScrollTop   = newMax;
+      if (atBottom) smoothScrollTo(container, maxScrollTop, 900);
+    }
+
+    container.addEventListener('scroll', () => {
+      if (container.scrollTop > maxScrollTop) container.scrollTop = maxScrollTop;
+      requestAnimationFrame(update);
+    });
+
+    window.addEventListener('load', () => {
+      init();
+    });
+    update();
+
+    // Hover image overlay
+    const imgOverlay = document.getElementById('imgOverlay');
+    const overlayImg = document.getElementById('overlayImg');
+    let activeHw = null;
+
+    function applyTilt(rotY, rotX) {
+      imgOverlay.style.transform =
+        `translate(-50%, -50%) perspective(800px) rotateY(${rotY}deg) rotateX(${rotX}deg)`;
+    }
+
+    document.addEventListener('mouseover', e => {
+      const hw = e.target.closest('.hw');
+      if (hw) {
+        activeHw = hw;
+        overlayImg.src = `content/${hw.dataset.img}.webp`;
+        imgOverlay.classList.add('visible');
+      }
+    });
+    document.addEventListener('mousemove', e => {
+      if (!activeHw) return;
+      const r  = activeHw.getBoundingClientRect();
+      const dx = (e.clientX - (r.left + r.width/2))  / (r.width/2);
+      const dy = (e.clientY - (r.top  + r.height/2)) / (r.height/2);
+      applyTilt(dx * 20, -dy * 12);
+    });
+    document.addEventListener('mouseout', e => {
+      const hw = e.target.closest('.hw');
+      if (hw && !hw.contains(e.relatedTarget)) {
+        activeHw = null;
+        imgOverlay.classList.remove('visible');
+        applyTilt(0, 0);
+      }
+    });
+
+    /* ═══════════════════════════════════
+       OVERLAY JS
+    ═══════════════════════════════════ */
+    const siteOverlay = document.getElementById('site-overlay');
+    const ovContainer = document.getElementById('ovContainer');
+    const ovSlides    = Array.from(document.querySelectorAll('.ov-slide'));
+
+    // Skip overlay if already seen this session
+    if (sessionStorage.getItem('overlayDone')) {
+      siteOverlay.style.display = 'none';
+      container.classList.add('revealed');
+      // Audio requires a user gesture — fire on first interaction
+      const startAudioOnce = () => {
+        speakSlide();
+        document.removeEventListener('click', startAudioOnce);
+        document.removeEventListener('keydown', startAudioOnce);
+        document.removeEventListener('touchstart', startAudioOnce);
+      };
+      document.addEventListener('click', startAudioOnce);
+      document.addEventListener('keydown', startAudioOnce);
+      document.addEventListener('touchstart', startAudioOnce);
+    }
+
+    // Dismiss on click — remember it for this session
+    siteOverlay.addEventListener('click', () => {
+      siteOverlay.classList.add('dismissed');
+      sessionStorage.setItem('overlayDone', '1');
+      // Wait for overlay fade to finish, then slide content in
+      setTimeout(() => {
+        container.classList.add('revealed');
+        speakSlide(); // browser allows audio after first user gesture
+      }, 720);
+    });
+
+    // Fit names to viewport
+    function fitAllNames() {
+      const names = document.querySelectorAll('.ov-artist-name');
+      let size = Math.min(220, window.innerWidth * 0.14);
+      names.forEach(n => n.style.fontSize = size + 'px');
+      while (size > 10 && Array.from(names).some(n => n.scrollWidth > window.innerWidth)) {
+        size -= 1;
+        names.forEach(n => n.style.fontSize = size + 'px');
+      }
+    }
+    fitAllNames();
+    window.addEventListener('resize', fitAllNames);
+
+    // Audio
+    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
+    function mkNoise(duration, filter, filterFreq) {
+      const buf  = audioCtx.createBuffer(1, audioCtx.sampleRate * duration, audioCtx.sampleRate);
+      const data = buf.getChannelData(0);
+      for (let i = 0; i < data.length; i++) data[i] = Math.random() * 2 - 1;
+      const src = audioCtx.createBufferSource();
+      src.buffer = buf;
+      const g = audioCtx.createGain();
+      if (filter) {
+        const f = audioCtx.createBiquadFilter();
+        f.type = filter; f.frequency.value = filterFreq;
+        src.connect(f); f.connect(g);
+      } else { src.connect(g); }
+      g.connect(audioCtx.destination);
+      return { src, gain: g };
+    }
+
+    function mkOsc(freq, type = 'sine') {
+      const o = audioCtx.createOscillator();
+      const g = audioCtx.createGain();
+      o.type = type; o.frequency.value = freq;
+      o.connect(g); g.connect(audioCtx.destination);
+      return { osc: o, gain: g };
+    }
+
+    function env(gn, peak, decay, t) {
+      gn.gain.setValueAtTime(peak, t);
+      gn.gain.exponentialRampToValueAtTime(0.0001, t + decay);
+    }
+
+    const ovSounds = {
+      1: t => { const {src,gain:g} = mkNoise(0.2,'bandpass',800); env(g,0.7,0.18,t); g.gain.setValueAtTime(0.7,t); src.start(t); src.stop(t+0.2); const {osc:o,gain:og}=mkOsc(200); env(og,0.4,0.08,t); o.start(t); o.stop(t+0.1); },
+      2: t => { const {osc:o,gain:g}=mkOsc(60); o.frequency.setValueAtTime(160,t); o.frequency.exponentialRampToValueAtTime(40,t+0.1); env(g,0.9,0.3,t); o.start(t); o.stop(t+0.35); },
+      3: t => { const {src,gain:g}=mkNoise(0.08,'highpass',8000); env(g,0.4,0.05,t); g.gain.setValueAtTime(0.4,t); src.start(t); src.stop(t+0.08); },
+      4: t => { [0,0.01,0.02].forEach(off=>{ const {src,gain:g}=mkNoise(0.07,'bandpass',1200); g.gain.setValueAtTime(0.5,t+off); g.gain.exponentialRampToValueAtTime(0.0001,t+off+0.06); src.start(t+off); src.stop(t+off+0.07); }); },
+    };
+
+    function ovPlaySample(imgNum) {
+      if (audioCtx.state === 'suspended') audioCtx.resume();
+      const fn = ovSounds[parseInt(imgNum)];
+      if (fn) fn(audioCtx.currentTime);
+    }
+
+    // Infinite scroll setup
+    let ovCurrentImg = null;
+    const ovRealCount  = ovSlides.length;
+    const ovStartSpacer = ovContainer.querySelector('.ov-slide-spacer:first-child');
+    const ovEndSpacer   = ovContainer.querySelector('.ov-slide-spacer:last-child');
+
+    [...ovSlides].reverse().forEach(s => ovStartSpacer.after(s.cloneNode(true)));
+    ovSlides.forEach(s => ovEndSpacer.before(s.cloneNode(true)));
+
+    function ovUpdate() {
+      const all     = Array.from(ovContainer.querySelectorAll('.ov-slide'));
+      const vh      = ovContainer.clientHeight;
+      const centerY = vh / 2;
+      let   closest = null, closestDist = Infinity;
+
+      all.forEach((slide, i) => {
+        const rect        = slide.getBoundingClientRect();
+        const slideCenter = rect.top + rect.height / 2;
+        const absDist     = Math.abs(slideCenter - centerY);
+
+        if (absDist < closestDist) { closestDist = absDist; closest = slide; }
+
+        const t   = Math.min(absDist / (vh * 0.5), 1);
+        const e   = t * t;
+        const dir = i % 2 === 0 ? 1 : -1;
+        slide.style.transform = `perspective(700px) rotateY(${e*42*dir}deg) scale(${1+e})`;
+      });
+
+      if (closest && closest.dataset.img !== ovCurrentImg) {
+        ovCurrentImg = closest.dataset.img;
+        ovPlaySample(ovCurrentImg);
+      }
+    }
+
+    ovContainer.addEventListener('scroll', () => requestAnimationFrame(ovUpdate), { passive: true });
+    ovUpdate();
+
+    ovContainer.addEventListener('wheel',     e => e.preventDefault(), { passive: false });
+    ovContainer.addEventListener('touchmove', e => e.preventDefault(), { passive: false });
+
+    function ovSlideH() { return ovSlides[0].offsetHeight; }
+    function ovScrollToIdx(i, smooth) {
+      ovContainer.scrollTo({ top: ovSlideH() * (i + 0.5), behavior: smooth ? 'smooth' : 'instant' });
+    }
+
+    let autoIdx = ovRealCount;
+
+    function autoNext() {
+      if (siteOverlay.classList.contains('dismissed')) return;
+      autoIdx++;
+      ovScrollToIdx(autoIdx, true);
+      if (autoIdx >= ovRealCount * 2) {
+        setTimeout(() => {
+          autoIdx = ovRealCount;
+          ovScrollToIdx(autoIdx, false);
+          setTimeout(autoNext, 2000);
+        }, 700);
+      } else {
+        setTimeout(autoNext, 2000);
+      }
+    }
+
+    ovScrollToIdx(ovRealCount, false);
+    setTimeout(autoNext, 2000);
+
+    /* ═══════════════════════════════════
+       MOBILE MENU JS
+    ═══════════════════════════════════ */
+    const mobileMenu  = document.getElementById('mobile-menu');
+    const mobileTrigger = document.getElementById('mobileTrigger');
+    const mobileClose = document.getElementById('mobile-menu-close');
+
+    function openMobileMenu(e) {
+      e.preventDefault();
+      mobileMenu.classList.toggle('open');
+    }
+
+    function closeMobileMenu() {
+      mobileMenu.classList.remove('open');
+    }
+
+    mobileTrigger.addEventListener('click', openMobileMenu);
+    mobileClose.addEventListener('click', closeMobileMenu);
+
+    // Close when a nav link inside the menu is clicked
+    mobileMenu.querySelectorAll('a').forEach(a => {
+      a.addEventListener('click', () => {
+        if (a.getAttribute('href') !== '#') closeMobileMenu();
+      });
+    });
+
+  </script>
+
+</body>
+</html>

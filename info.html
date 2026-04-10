@@ -1,0 +1,521 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Info – Backslash</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Roboto+Flex:opsz,wdth,wght@8..144,25..151,100..900&display=swap" rel="stylesheet">
+  <style>
+
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+    html, body {
+      width: 100%;
+      font-family: 'Roboto Flex', 'Arial Black', Helvetica, sans-serif;
+    }
+
+    body {
+      background:
+        linear-gradient(to bottom, #ffffff 0%, #ffffff 10%, #fff 45%, #f0f0f0 70%, #ffffff 100%);
+      background-attachment: fixed;
+    }
+
+    /* ── Nav ── */
+    .nav {
+      position: fixed;
+      top: 0; left: 0; width: 100%;
+      z-index: 100;
+      transition: transform 0.3s ease;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 14px 0 12px;
+      gap: clamp(16px, 3vw, 48px);
+    }
+    .nav a {
+      font-family: 'Roboto Flex', 'Arial Black', Helvetica, sans-serif;
+      font-weight: 900;
+      font-size: clamp(14px, 1.8vw, 26px);
+      text-decoration: none;
+      letter-spacing: 0.08em;
+      mix-blend-mode: difference;
+      color: #c8c8c8;
+      text-shadow: 0 0 8px rgba(255,255,255,0.9), 0 0 18px rgba(255,255,255,0.5);
+    }
+    .nav a:hover { opacity: 0.6; }
+
+    .nav::before {
+      content: '';
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      height: 110px;
+      z-index: -1;
+      backdrop-filter: blur(24px);
+      -webkit-backdrop-filter: blur(24px);
+      background: linear-gradient(to bottom, rgba(0,0,0,0.45) 0%, rgba(0,0,0,0.1) 70%, transparent 100%);
+      pointer-events: none;
+    }
+
+    #mobileTrigger { display: none; }
+    #mobile-menu { display: none; }
+
+    @media (max-width: 768px) {
+      .nav a { display: none; }
+      #mobile-menu { display: flex; }
+      #mobileTrigger {
+        display: block;
+        font-size: clamp(18px, 6vw, 28px);
+        mix-blend-mode: difference;
+        color: #c8c8c8;
+        text-shadow: 0 0 8px rgba(255,255,255,0.9), 0 0 18px rgba(255,255,255,0.5);
+      }
+      .nav { justify-content: center; }
+    }
+
+    /* ── Mobile menu ── */
+    #mobile-menu {
+      position: fixed;
+      top: 0; left: 0; width: 100%; height: calc(65vh + 48px);
+      z-index: 200;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-start;
+      padding-top: 90px;
+      gap: clamp(4px, 1.2vh, 12px);
+      background: rgba(0, 0, 0, 0.3);
+      backdrop-filter: blur(28px);
+      -webkit-backdrop-filter: blur(28px);
+      -webkit-mask-image: linear-gradient(to bottom, black 75%, transparent 100%);
+      mask-image: linear-gradient(to bottom, black 75%, transparent 100%);
+      transform: translateY(calc(-100% - 40px));
+      transition: transform 0.4s cubic-bezier(0.25, 0, 0, 1);
+      pointer-events: none;
+    }
+    #mobile-menu.open { transform: translateY(0); pointer-events: auto; }
+    #mobile-menu a {
+      font-family: 'Roboto Flex', 'Arial Black', Helvetica, sans-serif;
+      font-weight: 900;
+      font-size: clamp(24px, 7vw, 48px);
+      text-decoration: none;
+      letter-spacing: 0.06em;
+      color: #c8c8c8;
+      mix-blend-mode: difference;
+      transform: scaleY(0.62);
+      transform-origin: center center;
+      display: block;
+      transition: opacity 0.2s;
+    }
+    #mobile-menu a:hover, #mobile-menu a:active { opacity: 0.5; }
+    #mobile-menu-close {
+      position: absolute;
+      top: 10px; right: 14px;
+      background: none; border: none;
+      cursor: pointer; color: #fff;
+      font-size: 20px; font-weight: 900;
+      opacity: 0.6; padding: 4px 8px;
+    }
+    #mobile-menu-close:hover { opacity: 1; }
+
+    /* ── Page layout ── */
+    .page {
+      padding-top: 80px;
+      min-height: 100vh;
+      position: relative;
+      z-index: 20;
+    }
+
+    /* ── Hero ── */
+    .hero-name {
+      padding: 0 5vw;
+      overflow: hidden;
+    }
+    .hero-name h1 {
+      font-family: 'Roboto Flex', 'Arial Black', Helvetica, sans-serif;
+      font-weight: 900;
+      font-size: clamp(60px, 13vw, 200px);
+      color: #c8c8c8;
+      white-space: nowrap;
+      line-height: 0.9;
+      transform: scaleY(0.58);
+      transform-origin: left center;
+      display: block;
+    }
+
+    /* ── Info content ── */
+    .info-content {
+      display: grid;
+      grid-template-columns: 1.1fr 0.9fr;
+      gap: clamp(24px, 4vw, 60px);
+      padding: clamp(20px, 4vw, 60px) 5vw clamp(60px, 8vw, 100px);
+      align-items: start;
+    }
+
+    @media (max-width: 768px) {
+      .info-content { grid-template-columns: 1fr; padding: 24px 6vw 60px; }
+      .hero-name h1 { font-size: clamp(48px, 14vw, 100px); }
+    }
+
+    /* ── Left column ── */
+    .info-left {
+      display: flex;
+      flex-direction: column;
+      gap: clamp(28px, 4vh, 52px);
+    }
+
+    .info-intro {
+      font-family: 'Roboto Flex', 'Arial Black', Helvetica, sans-serif;
+      font-weight: 900;
+      font-size: clamp(30px, 1.2vw, 17px);
+      color: #c8c8c8;
+      line-height: 1.55;
+      letter-spacing: 0.01em;
+      transform: scaleY(0.78);
+      transform-origin: top left;
+    }
+
+    .info-block {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .info-block-label {
+      font-family: 'Roboto Flex', 'Arial Black', Helvetica, sans-serif;
+      font-weight: 900;
+      font-size: clamp(8px, 0.75vw, 10px);
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: #888;
+      margin-bottom: 8px;
+    }
+
+    .info-block p,
+    .info-block a {
+      font-family: 'Roboto Flex', 'Arial Black', Helvetica, sans-serif;
+      font-weight: 900;
+      font-size: clamp(11px, 1.1vw, 15px);
+      letter-spacing: 0.04em;
+      color: #c8c8c8;
+      transform: scaleY(0.68);
+      transform-origin: left center;
+      display: block;
+      line-height: 1.9;
+    }
+
+    .info-block a {
+      text-decoration: underline;
+      text-underline-offset: 3px;
+      text-decoration-color: rgba(200,200,200,0.35);
+      transition: text-decoration-color 0.2s;
+    }
+    .info-block a:hover { text-decoration-color: rgba(200,200,200,1); }
+
+    /* ── Right column ── */
+    .info-right {
+      display: flex;
+      flex-direction: column;
+      gap: clamp(28px, 4vh, 52px);
+      padding-top: clamp(8px, 2vw, 32px);
+    }
+
+  
+    .awareness-label {
+      font-family: 'Roboto Flex', 'Arial Black', Helvetica, sans-serif;
+      font-weight: 900;
+      font-size: clamp(8px, 0.75vw, 10px);
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: #888;
+      margin-bottom: 8px;
+    }
+
+    .awareness-text {
+      font-family: 'Roboto Flex', 'Arial Black', Helvetica, sans-serif;
+      font-weight: 900;
+      font-size: clamp(30px, 1.2vw, 17px);
+      color: #c8c8c8;
+      line-height: 1.55;
+      letter-spacing: 0.01em;
+      transform: scaleY(0.78);
+      transform-origin: top left;
+    }
+
+    /* ── Partners ── */
+    .partners-grid {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .partners-grid span {
+      font-family: 'Roboto Flex', 'Arial Black', Helvetica, sans-serif;
+      font-weight: 900;
+      font-size: clamp(11px, 1.1vw, 15px);
+      letter-spacing: 0.04em;
+      color: #c8c8c8;
+      transform: scaleY(0.68);
+      transform-origin: left center;
+      display: block;
+      line-height: 1.9;
+    }
+
+    /* ── Social ── */
+    .social-row {
+      display: flex;
+      gap: clamp(12px, 2vw, 28px);
+      flex-wrap: wrap;
+    }
+
+    .social-row a {
+      font-family: 'Roboto Flex', 'Arial Black', Helvetica, sans-serif;
+      font-weight: 900;
+      font-size: clamp(9px, 0.9vw, 12px);
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      text-decoration: none;
+      color: #c8c8c8;
+      opacity: 0.5;
+      transition: opacity 0.2s;
+    }
+    .social-row a:hover { opacity: 1; }
+
+    /* ── Icon buttons ── */
+    .icon-btn {
+      position: fixed;
+      top: 14px;
+      z-index: 310;
+      background: none;
+      border: none;
+      cursor: pointer;
+      padding: 4px;
+      line-height: 0;
+      color: #fff;
+      mix-blend-mode: difference;
+      -webkit-tap-highlight-color: transparent;
+    }
+    #readableToggle { right: 16px; }
+    #soundToggle    { left: 16px; }
+    .icon-btn .cross-line {
+      stroke-dasharray: 32;
+      stroke-dashoffset: 32;
+      transition: stroke-dashoffset 0.28s ease;
+    }
+    .icon-btn.off .cross-line { stroke-dashoffset: 0; }
+
+    /* ── Simple mode ── */
+    body.simple .brush { display: none; }
+    body.simple .nav a { mix-blend-mode: normal; color: #000; text-shadow: none; }
+    body.simple .icon-btn { mix-blend-mode: normal; color: #000; }
+    body.simple .nav::before { background: rgba(255,255,255,0.85); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); }
+    body.simple .hero-name h1,
+    body.simple .info-intro,
+    body.simple .info-block p,
+    body.simple .info-block a,
+    body.simple .awareness-text,
+    body.simple .partners-grid span,
+    body.simple .social-row a { color: #000; }
+
+    /* ── Brush overlay ── */
+    .brush {
+      position: fixed;
+      top: 0; left: 0;
+      width: 100vw; height: 100vh;
+      pointer-events: none;
+      z-index: 10;
+      mix-blend-mode: difference;
+      background: linear-gradient(to bottom, #fff 0%, #313131 25%, #fffee9 50%, #313131 75%, #fff 100%);
+    }
+  </style>
+</head>
+<body>
+
+  <nav class="nav">
+    <a href="index.html">Backslash</a>
+    <a href="index_n_color_3.html">Artists</a>
+    <a href="index_n_timetable_1.html">Timetable</a>
+    <a href="#">Day</a>
+    <a href="index_n_gallery.html">Gallery</a>
+    <a href="info.html">Info</a>
+    <a href="#" id="mobileTrigger">Menu</a>
+  </nav>
+
+  <button class="icon-btn" id="readableToggle" aria-label="Toggle readable mode">
+    <svg width="26" height="26" viewBox="0 0 26 26" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+      <ellipse cx="13" cy="13" rx="9" ry="5.5"/>
+      <circle cx="13" cy="13" r="2.5" fill="currentColor" stroke="none"/>
+      <line class="cross-line" x1="3" y1="3" x2="23" y2="23"/>
+    </svg>
+  </button>
+
+  <button class="icon-btn" id="soundToggle" aria-label="Toggle voice">
+    <svg width="26" height="26" viewBox="0 0 26 26" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+      <polygon points="5,9 5,17 9,17 15,21 15,5 9,9" fill="currentColor" stroke="none"/>
+      <path d="M18,10 Q22,13 18,16"/>
+      <line class="cross-line" x1="3" y1="3" x2="23" y2="23"/>
+    </svg>
+  </button>
+
+  <div id="mobile-menu">
+    <button id="mobile-menu-close" style="display:none"></button>
+    <a href="index.html">Backslash</a>
+    <a href="index_n_color_3.html">Artists</a>
+    <a href="index_n_timetable_1.html">Timetable</a>
+    <a href="#">Day</a>
+    <a href="index_n_gallery.html">Gallery</a>
+    <a href="info.html">Info</a>
+  </div>
+
+  <div class="page">
+    <div class="hero-name">
+      <h1>Info</h1>
+    </div>
+
+    <div class="info-content">
+
+      <!-- Left column -->
+      <div class="info-left">
+
+        <p class="info-intro">
+          Discover a carefully picked selection of electronic live acts, art performances as well as DJ sets and visual arts interventions spread over four rooms. More than 30 artists from the international, national and local scene will take over the entire complex of Gessnerallee over the weekend.
+        </p>
+
+        <p class="info-intro">
+          Since 2016, Backslash Festival has been presenting works that move between and beyond performing arts, club culture and visual arts. The festival is organised by the non-profit association Tokyo Data Collective, in co-production with the Theater Gessnerallee.
+        </p>
+
+        <div class="info-block">
+          <span class="info-block-label">Location</span>
+          <p>Gessnerallee 8</p>
+          <p>8001 Zurich</p>
+        </div>
+
+        <div class="info-block">
+          <span class="info-block-label">Dates</span>
+          <p>22–24 November 2024</p>
+          <p>Friday & Saturday, 18:00–06:00</p>
+        </div>
+
+        <div class="info-block">
+          <span class="info-block-label">Media</span>
+          <a href="#">Browse the Presskit</a>
+          <a href="mailto:info@backslashfestival.com">info@backslashfestival.com</a>
+        </div>
+
+        <div class="info-block">
+          <span class="info-block-label">Design</span>
+          <p>Moritz Furger, Romain Salomon,</p>
+          <p>Tonja Wüthrich & Vera Oberholzer</p>
+        </div>
+
+        <div class="info-block">
+          <span class="info-block-label">Code</span>
+          <p>noncitizen</p>
+        </div>
+
+        <div class="info-block">
+          <span class="info-block-label">Archives</span>
+          <a href="#">2023</a>
+          <a href="#">2022</a>
+          <a href="#">2019</a>
+          <a href="#">2018</a>
+          <a href="#">2017</a>
+          <a href="#">2016</a>
+        </div>
+
+      </div>
+
+      <!-- Right column -->
+      <div class="info-right">
+
+        <div class="awareness-block">
+          <span class="awareness-label">Awareness</span>
+          <p class="awareness-text">
+            At Backslash Festival, we have a ZERO tolerance policy towards discrimination, harassment, and abuse in any form. A dedicated Awareness team will be present at all times and a safer space for retreat will also be available.
+          </p>
+        </div>
+
+        <div class="awareness-block">
+          <span class="awareness-label">Accessibility</span>
+          <p class="awareness-text">
+            Strobe lighting will be used now and then in the stages X and Y. There won't be any strobe lighting in the stages W and Z. The entire festival has been designed so that all areas are accessible for people with limited mobility.
+          </p>
+        </div>
+
+        <div class="info-block">
+          <span class="info-block-label">Partners</span>
+          <div class="partners-grid">
+            <span>Elisabeth Weber Stiftung</span>
+            <span>Guggenheim Stiftung</span>
+            <span>Kanton Zürich Kulturförderung</span>
+            <span>Migros Kulturprozent</span>
+            <span>Oertli Stiftung</span>
+            <span>Okapi Equipment</span>
+            <span>Pro Helvetia</span>
+            <span>Temperatio Stiftung</span>
+          </div>
+        </div>
+
+        <div class="social-row">
+          <a href="#">Instagram</a>
+          <a href="#">Telegram</a>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <div class="brush"></div>
+
+  <script>
+    const mobileMenu    = document.getElementById('mobile-menu');
+    const mobileTrigger = document.getElementById('mobileTrigger');
+    const mobileClose   = document.getElementById('mobile-menu-close');
+
+    const nav = document.querySelector('.nav');
+    let lastScrollY = window.scrollY;
+    window.addEventListener('scroll', () => {
+      if (window.innerWidth > 768) return;
+      const y = window.scrollY;
+      if (y < 10) {
+        nav.style.transform = '';
+      } else if (y > lastScrollY + 8) {
+        if (!mobileMenu.classList.contains('open')) nav.style.transform = 'translateY(-100%)';
+      } else if (y < lastScrollY - 8) {
+        nav.style.transform = '';
+      }
+      lastScrollY = y;
+    }, { passive: true });
+
+    function updateTriggerLabel() {
+      mobileTrigger.textContent = mobileMenu.classList.contains('open') ? '✕' : 'Menu';
+    }
+
+    mobileTrigger.addEventListener('click', e => { e.preventDefault(); mobileMenu.classList.toggle('open'); updateTriggerLabel(); });
+    mobileClose.addEventListener('click', () => { mobileMenu.classList.remove('open'); updateTriggerLabel(); });
+    mobileMenu.querySelectorAll('a').forEach(a => {
+      a.addEventListener('click', () => {
+        if (a.getAttribute('href') !== '#') { mobileMenu.classList.remove('open'); updateTriggerLabel(); }
+      });
+    });
+
+    // Apply saved mode on load
+    if (localStorage.getItem('simpleMode') === '1') {
+      document.body.classList.add('simple');
+      document.getElementById('readableToggle').classList.add('off');
+    }
+
+    document.getElementById('readableToggle').addEventListener('click', () => {
+      const btn = document.getElementById('readableToggle');
+      const simple = document.body.classList.toggle('simple');
+      btn.classList.toggle('off', simple);
+      localStorage.setItem('simpleMode', simple ? '1' : '0');
+    });
+    document.getElementById('soundToggle').addEventListener('click', () => {
+      document.getElementById('soundToggle').classList.toggle('off');
+    });
+  </script>
+
+</body>
+</html>
