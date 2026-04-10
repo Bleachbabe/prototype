@@ -319,6 +319,7 @@
         text-shadow: 0 0 8px rgba(255,255,255,0.9), 0 0 18px rgba(255,255,255,0.5);
       }
       .nav { justify-content: center; }
+      .nav::before { display: none; }
 
       /* Smaller catchphrase text on mobile */
       .artist-name {
@@ -416,7 +417,7 @@
 
   <!-- Mobile menu overlay -->
   <div id="mobile-menu">
-    <button id="mobile-menu-close">&#x2715;</button>
+    <button id="mobile-menu-close" style="display:none"></button>
     <a href="index.html">Backslash</a>
     <a href="index_n_color_3.html">Artists</a>
     <a href="index_n_timetable_1.html">Timetable</a>
@@ -451,6 +452,7 @@
     <div class="slide" data-img="5"><span class="artist-name">Wait tell me your not cheating on me with these AI SLOPS</span></div>
     <div class="slide" data-img="6"><span class="artist-name">Why does everyone keep telling me to touch some grass?</span></div>
     <div class="slide" data-img="7"><span class="artist-name">Those 808s massage my brain with dirty hands leaving behind the so called brainrot</span></div>
+        <div class="slide" data-img="7"><span class="artist-name">Im Backslash that night the cue button on the cdjs was stiuck by viciously hitting the botton hard. anu cato tried to release the stuck tabacco. nothing helped...</span></div>
     <div class="slide" data-img="1"><span class="artist-name">Fully tinted glasses on my way to <span class="hw" data-img="1">Backslash Festival</span> made me realise I'm a star</span></div>
     <div class="slide" data-img="3"><span class="artist-name"><span class="hw" data-img="3">Anu Cato</span> has found a sound incomparable to all of Zürich</span></div>
     <div class="slide" data-img="4"><span class="artist-name">By leaving theis synthesizer in the glissening sun all day</span></div>
@@ -821,22 +823,22 @@
     const mobileTrigger = document.getElementById('mobileTrigger');
     const mobileClose = document.getElementById('mobile-menu-close');
 
-    function openMobileMenu(e) {
+    function updateTriggerLabel() {
+      mobileTrigger.textContent = mobileMenu.classList.contains('open') ? '✕' : 'Menu';
+    }
+
+    mobileTrigger.addEventListener('click', e => {
       e.preventDefault();
       mobileMenu.classList.toggle('open');
-    }
+      updateTriggerLabel();
+    });
 
-    function closeMobileMenu() {
-      mobileMenu.classList.remove('open');
-    }
-
-    mobileTrigger.addEventListener('click', openMobileMenu);
-    mobileClose.addEventListener('click', closeMobileMenu);
-
-    // Close when a nav link inside the menu is clicked
     mobileMenu.querySelectorAll('a').forEach(a => {
       a.addEventListener('click', () => {
-        if (a.getAttribute('href') !== '#') closeMobileMenu();
+        if (a.getAttribute('href') !== '#') {
+          mobileMenu.classList.remove('open');
+          updateTriggerLabel();
+        }
       });
     });
 
